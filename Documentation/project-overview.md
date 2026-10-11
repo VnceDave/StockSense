@@ -1,4 +1,4 @@
-# StockSense: Inventory and Supplier Management System for Small Food Businesses
+# StockSense: Inventory and Supplier Management 
 
 ## 1. System Explanation
 

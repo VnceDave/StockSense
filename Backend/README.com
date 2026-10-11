@@ -1,10 +1,3 @@
 # StockSense Backend
 
-This folder will contain the backend code for the StockSense Inventory and Supplier Management System.
-
-## Planned Features
-- Manage ingredient and inventory records
-- Track stock-in and stock-out transactions
-- Manage suppliers
-- Monitor low-stock and expiration alerts
-- Generate inventory reports
+The purpose of this folder is to handle the system's processing, manage inventory and supplier data, and connect the application to the MySQL database using Node.js and Express.js.
