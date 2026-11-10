@@ -1,349 +1,89 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StockSense — Food Business Manager</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockSense | Food Business Management</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="app">
-<aside class="side">
-  <div class="brand">Stock<span>Sense</span></div>
-  <div class="tag">SMART STOCK. FRESH FOOD.</div>
-  <nav class="nav" id="nav">
-    <button class="active" data-page="dashboard">▦ &nbsp; Dashboard</button>
-    <button data-page="inventory">▤ &nbsp; Inventory</button>
-    <button data-page="menu">☷ &nbsp; Menu & Ordering</button>
-    <button data-page="orders">🛍 &nbsp; Orders</button>
-    <button data-page="suppliers">♧ &nbsp; Suppliers</button>
-    <button data-page="applications">✓ &nbsp; Shop Applications</button>
-    <button data-page="reports">↗ &nbsp; Reports</button>
-  </nav>
-  <div class="sidefoot">Prototype preview · Sample data<br>Changes stay in this browser tab.</div>
-</aside>
+    <!-- LOGIN -->
+    <section id="loginScreen" class="login-screen">
+        <div class="login-card">
+            <h1>🥬 StockSense</h1>
+            <p>SMART STOCK. FRESH FOOD.</p>
+            <h2>Welcome Back!</h2>
 
-<main class="main">
+            <form id="loginForm">
+                <label>Your Name</label>
+                <input type="text" id="loginName"
+                    placeholder="Enter your name" required>
 
-<header class="top">
-  <div>
-    <div class="eyebrow">Small food business toolkit</div>
-    <h1 id="pageTitle">Dashboard</h1>
-  </div>
-</header>
+                <label>Login Role</label>
+                <select id="loginRole">
+                    <option>Admin</option>
+                    <option>Shop Owner</option>
+                    <option>Staff</option>
+                </select>
 
-<section class="page active" id="dashboard">
-  <p class="intro">Here's what's happening across your food shop today.</p>
-
-  <div class="grid">
-    <div class="card">
-      <div class="statlabel">Active orders</div>
-      <div class="stat" id="statOrders">12</div>
-      <div class="hint">Pickup & shop orders</div>
-    </div>
-    <div class="card">
-      <div class="statlabel">Inventory items</div>
-      <div class="stat" id="statItems">8</div>
-      <div class="hint">Ingredients tracked</div>
-    </div>
-    <div class="card">
-      <div class="statlabel">Low-stock alerts</div>
-      <div class="stat" id="statLow">2</div>
-      <div class="hint">Restock recommended</div>
-    </div>
-    <div class="card">
-      <div class="statlabel">Today's sales</div>
-      <div class="stat">₱8,450</div>
-      <div class="hint">Demo figure</div>
-    </div>
-  </div>
-
-  <div class="two">
-    <div class="panel">
-      <div class="sectionhead" style="margin-top:0">
-        <h2>Inventory watchlist</h2>
-        <button class="secondary small" onclick="showPage('inventory')">View inventory</button>
-      </div>
-      <div id="watchlist"></div>
-    </div>
-
-    <div class="panel">
-      <h2>Allergy & food safety</h2>
-      <p>Keep customer dietary needs visible before checkout.</p>
-      <div class="alert red">
-        <span>⚠</span>
-        <div>
-          <b>Peanut allergy notice</b>
-          Satay bowl contains peanuts. Display an alert to customers.
+                <button type="submit">Login</button>
+            </form>
         </div>
-      </div>
-      <div class="alert">
-        <span>ℹ</span>
-        <div>
-          <b>Shared preparation area</b>
-          Cross-contact may occur. Confirm ingredients with staff.
-        </div>
-      </div>
-      <button class="secondary" onclick="showPage('menu')">Review menu alerts</button>
-    </div>
-  </div>
+    </section>
 
-  <div class="sectionhead">
-    <h2>Recent orders</h2>
-    <button class="secondary small" onclick="showPage('orders')">See all</button>
-  </div>
+    <!-- MAIN APPLICATION -->
+    <div id="app" class="app hidden">
 
-  <div class="panel tablewrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Order</th>
-          <th>Customer</th>
-          <th>Pickup</th>
-          <th>Total</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody id="recentOrders"></tbody>
-    </table>
-  </div>
-</section>
+        <aside class="sidebar">
+            <div class="brand">
+                <h2>🥬 StockSense</h2>
+                <small>Smart Stock. Fresh Food.</small>
+            </div>
 
-<section class="page" id="inventory">
-  <p class="intro">Track ingredients, quantities, and items that need restocking.</p>
+            <p class="nav-label">MAIN MENU</p>
 
-  <div class="panel">
-    <div class="sectionhead" style="margin-top:0">
-      <h2>Ingredient inventory</h2>
-      <button onclick="openStockForm()">＋ Add stock</button>
-    </div>
+            <nav id="navigation">
+                <button class="nav-link active" data-page="dashboard">▦ Dashboard</button>
+                <button class="nav-link" data-page="inventory">📦 Inventory</button>
+                <button class="nav-link" data-page="products">🛒 Sales & Products</button>
+                <button class="nav-link" data-page="purchases">🧾 Purchases</button>
+                <button class="nav-link" data-page="suppliers">🚚 Suppliers</button>
+                <button class="nav-link" data-page="batches">◷ Batch & Expiry</button>
+                <button class="nav-link" data-page="reports">📊 Reports</button>
+                <button class="nav-link" data-page="notifications">🔔 Notifications</button>
+                <button class="nav-link" data-page="settings">⚙ Settings</button>
+            </nav>
 
-    <div id="stockForm" style="display:none;border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:16px">
-      <h3 style="margin:0 0 8px;font-size:15px">Add or update an ingredient</h3>
+            <div class="sidebar-bottom">
+                <p id="userNameLabel">User</p>
+                <small id="userRoleLabel">Staff</small>
+                <button id="logoutBtn" class="logout">Logout</button>
+            </div>
+        </aside>
 
-      <div class="formrow">
-        <div class="field">
-          <label>Ingredient name</label>
-          <input id="ingredientName" placeholder="e.g. Fresh milk">
-        </div>
-        <div class="field">
-          <label>Quantity</label>
-          <input id="ingredientQty" type="number" min="0" placeholder="e.g. 12">
-        </div>
-      </div>
+        <main class="main-content">
 
-      <div class="formrow">
-        <div class="field">
-          <label>Unit</label>
-          <select id="ingredientUnit">
-            <option>kg</option>
-            <option>g</option>
-            <option>L</option>
-            <option>pcs</option>
-            <option>packs</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Low-stock threshold</label>
-          <input id="ingredientThreshold" type="number" min="0" value="5">
-        </div>
-      </div>
+            <header class="topbar">
+                <div>
+                    <p>STOCKSENSE MANAGEMENT SYSTEM</p>
+                    <h1 id="pageTitle">Dashboard</h1>
+                </div>
+                <span class="online">● System Online</span>
+            </header>
 
-      <div class="actions">
-        <button onclick="saveStock()">Save ingredient</button>
-        <button class="secondary" onclick="document.getElementById('stockForm').style.display='none'">Cancel</button>
-      </div>
+            <section id="pageContent"></section>
+
+            <footer>
+                © 2026 StockSense | Food Business Management System
+            </footer>
+
+        </main>
     </div>
 
-    <div class="tablewrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Ingredient</th>
-            <th>Quantity</th>
-            <th>Threshold</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="inventoryRows"></tbody>
-      </table>
-    </div>
-  </div>
-</section>
+    <div id="toast" class="toast"></div>
 
-<section class="page" id="menu">
-  <p class="intro">Customer-facing menu with clear allergy warnings and pickup ordering.</p>
-
-  <div class="customerbar">
-    🛡️ <b>Food safety note:</b>
-    Allergy alerts are reminders, not a guarantee that food is allergen-free.
-    Customers should confirm ingredients and cross-contact risks with the shop.
-  </div>
-
-  <div class="sectionhead">
-    <h2>Order for pickup</h2>
-    <span class="pill" id="cartCount">0 items in cart</span>
-  </div>
-
-  <div class="menu-grid" id="menuGrid"></div>
-
-  <div class="panel" style="margin-top:16px">
-    <div class="sectionhead" style="margin-top:0">
-      <h2>Youre cartsss</h2>
-      <strong id="cartTotal">₱0</strong>
-    </div>
-
-    <div id="cartItems" class="muted">Your cart is empty. Add something tasty above.</div>
-
-    <div class="formrow">
-      <div class="field">
-        <label>Customer name</label>
-        <input id="customerName" placeholder="Name for pickup">
-      </div>
-      <div class="field">
-        <label>Pickup time</label>
-        <select id="pickupTime">
-          <option>As soon as ready</option>
-          <option>12:00 PM</option>
-          <option>12:30 PM</option>
-          <option>1:00 PM</option>
-          <option>1:30 PM</option>
-          <option>2:00 PM</option>
-          <option>5:00 PM</option>
-          <option>5:30 PM</option>
-          <option>6:00 PM</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="field">
-      <label>Allergies / dietary notes (optional)</label>
-      <input id="allergyNotes" placeholder="Tell the shop about allergies or dietary needs">
-    </div>
-
-    <div class="actions">
-      <button onclick="placeOrder()">Place demo pickup order</button>
-      <button class="secondary" onclick="clearCart()">Clear cart</button>
-    </div>
-
-    <p id="checkoutMessage" aria-live="polite"></p>
-  </div>
-</section>
-
-<section class="page" id="orders">
-  <p class="intro">Review customer pickup orders and update their status.</p>
-
-  <div class="panel tablewrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Order</th>
-          <th>Customer</th>
-          <th>Pickup</th>
-          <th>Items / notes</th>
-          <th>Total</th>
-          <th>Status</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody id="orderRows"></tbody>
-    </table>
-  </div>
-</section>
-
-<section class="page" id="suppliers">
-  <p class="intro">Keep supplier contacts handy for restocking.</p>
-
-  <div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr))">
-    <div class="card">
-      <div class="statlabel">Fresh produce</div>
-      <h3>Green Basket Trading</h3>
-      <p class="muted">Vegetables & herbs</p>
-      <span class="pill">Weekly delivery</span>
-    </div>
-    <div class="card">
-      <div class="statlabel">Meat & poultry</div>
-      <h3>Farmgate Foods</h3>
-      <p class="muted">Chicken & beef</p>
-      <span class="pill">2–3 days</span>
-    </div>
-    <div class="card">
-      <div class="statlabel">Dry goods</div>
-      <h3>PantryPro Supply</h3>
-      <p class="muted">Rice, flour & spices</p>
-      <span class="pill">Bulk orders</span>
-    </div>
-  </div>
-
-  <div class="panel">
-    <h2>Restock checklist</h2>
-    <p>Suggested based on low-stock items in your sample inventory.</p>
-    <div id="restockList"></div>
-    <button style="margin-top:12px" onclick="exportCSV()">Export inventory CSV</button>
-  </div>
-</section>
-
-<section class="page" id="applications">
-  <p class="intro">Approve or decline shops that want to join the StockSense platform.</p>
-
-  <div class="panel tablewrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Shop</th>
-          <th>Owner</th>
-          <th>Category</th>
-          <th>Applied</th>
-          <th>Status</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody id="applicationRows"></tbody>
-    </table>
-  </div>
-</section>
-
-<section class="page" id="reports">
-  <p class="intro">Simple exports for your own records. Numbers on this demo are sample data.</p>
-
-  <div class="grid">
-    <div class="card">
-      <div class="statlabel">Orders recorded</div>
-      <div class="stat" id="reportOrders">3</div>
-      <div class="hint">Including demo orders</div>
-    </div>
-    <div class="card">
-      <div class="statlabel">Menu products</div>
-      <div class="stat">6</div>
-      <div class="hint">Sample storefront</div>
-    </div>
-    <div class="card">
-      <div class="statlabel">Suppliers</div>
-      <div class="stat">3</div>
-      <div class="hint">Sample contacts</div>
-    </div>
-    <div class="card">
-      <div class="statlabel">Currency</div>
-      <div class="stat">PHP</div>
-      <div class="hint">Philippine peso</div>
-    </div>
-  </div>
-
-  <div class="panel">
-    <h2>Export your data</h2>
-    <p>Download CSV files that open in spreadsheet apps.</p>
-    <div class="actions">
-      <button onclick="exportCSV()">Download inventory CSV</button>
-      <button class="secondary" onclick="exportOrdersCSV()">Download orders CSV</button>
-    </div>
-  </div>
-</section>
-
-</main>
-</div>
-
-<script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

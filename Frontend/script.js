@@ -1,418 +1,711 @@
-const inventory = [
-  { name: "Chicken breast", qty: 3, unit: "kg", threshold: 5 },
-  { name: "Rice", qty: 18, unit: "kg", threshold: 5 },
-  { name: "Fresh milk", qty: 2, unit: "L", threshold: 4 },
-  { name: "Tomatoes", qty: 8, unit: "kg", threshold: 3 },
-  { name: "Cheese", qty: 2, unit: "packs", threshold: 3 },
-  { name: "Cooking oil", qty: 7, unit: "L", threshold: 3 },
-  { name: "Flour", qty: 10, unit: "kg", threshold: 4 },
-  { name: "Peanuts", qty: 1, unit: "kg", threshold: 2 }
+
+// =====================================
+// STOCKSENSE - MAIN JAVASCRIPT
+// =====================================
+
+// SAMPLE INVENTORY DATA
+
+let inventory = [
+    { id: 1, name: "Chicken Breast", category: "Meat", qty: 18, unit: "kg", minimum: 5, expiry: "2026-11-15" },
+    { id: 2, name: "Rice", category: "Dry Goods", qty: 42, unit: "kg", minimum: 10, expiry: "2027-02-10" },
+    { id: 3, name: "Fresh Milk", category: "Dairy", qty: 3, unit: "L", minimum: 4, expiry: "2026-11-12" },
+    { id: 4, name: "Cooking Oil", category: "Pantry", qty: 7, unit: "L", minimum: 3, expiry: "2027-01-20" },
+    { id: 5, name: "Coffee Beans", category: "Beverage", qty: 2, unit: "packs", minimum: 3, expiry: "2027-01-05" },
+    { id: 6, name: "Lettuce", category: "Produce", qty: 3, unit: "kg", minimum: 3, expiry: "2026-11-11" },
+    { id: 7, name: "Cheese", category: "Dairy", qty: 8, unit: "kg", minimum: 4, expiry: "2026-11-20" },
+    { id: 8, name: "Peanuts", category: "Allergen", qty: 1, unit: "kg", minimum: 2, expiry: "2027-03-01" }
 ];
 
-const menu = [
-  { id: 1, name: "Chicken Rice Bowl", price: 145, icon: "🍗", description: "Grilled chicken served with rice.", allergy: "Contains soy." },
-  { id: 2, name: "Beef Tapa Bowl", price: 165, icon: "🥩", description: "Savory beef tapa with rice.", allergy: "May contain soy." },
-  { id: 3, name: "Creamy Pasta", price: 135, icon: "🍝", description: "Creamy pasta with cheese.", allergy: "Contains dairy and wheat." },
-  { id: 4, name: "Fresh Garden Salad", price: 110, icon: "🥗", description: "Fresh vegetables and dressing.", allergy: "Check dressing ingredients." },
-  { id: 5, name: "Satay Bowl", price: 155, icon: "🥜", description: "Rice bowl with satay sauce.", allergy: "⚠ Contains peanuts." },
-  { id: 6, name: "Iced Coffee", price: 85, icon: "☕", description: "Chilled coffee drink.", allergy: "Contains dairy unless requested otherwise." }
+// SAMPLE PRODUCTS
+
+const products = [
+    { id: "P001", name: "Chicken Rice Bowl", price: 145, allergy: "None listed" },
+    { id: "P002", name: "Beef Tapa Bowl", price: 165, allergy: "Soy" },
+    { id: "P003", name: "Creamy Pasta", price: 135, allergy: "Milk, Wheat" },
+    { id: "P004", name: "Fresh Garden Salad", price: 110, allergy: "None listed" },
+    { id: "P005", name: "Satay Bowl", price: 155, allergy: "Peanuts" },
+    { id: "P006", name: "Iced Coffee", price: 85, allergy: "Milk" }
 ];
 
-let cart = [];
-let orders = [
-  { id: "ORD-1001", customer: "Jamie Cruz", pickup: "12:00 PM", items: "2 Chicken Rice Bowl", notes: "No onions", total: 290, status: "Preparing" },
-  { id: "ORD-1002", customer: "Alex Reyes", pickup: "12:30 PM", items: "1 Creamy Pasta", notes: "No special notes", total: 135, status: "Ready" },
-  { id: "ORD-1003", customer: "Sam Garcia", pickup: "1:00 PM", items: "1 Satay Bowl", notes: "Peanut allergy — confirm before preparation", total: 155, status: "Pending" }
+// SAMPLE PURCHASES
+
+const purchases = [
+    { id: "PO-001", supplier: "FreshFarm Trading", date: "2026-11-08", items: "Lettuce, Tomatoes", status: "Received" },
+    { id: "PO-002", supplier: "Daily Dairy Co.", date: "2026-11-09", items: "Milk, Cheese", status: "Pending" }
 ];
 
-let applications = [
-  { shop: "Daily Greens", owner: "Mia Santos", category: "Healthy meals", date: "Nov 2, 2026", status: "Pending" },
-  { shop: "Brew Corner", owner: "Noah Reyes", category: "Cafe", date: "Nov 4, 2026", status: "Pending" },
-  { shop: "Pasta House", owner: "Ella Cruz", category: "Restaurant", date: "Nov 5, 2026", status: "Approved" }
+// SAMPLE SUPPLIERS
+
+const suppliers = [
+    { id: "SUP-001", name: "FreshFarm Trading", contact: "09171234567", items: "Vegetables" },
+    { id: "SUP-002", name: "Daily Dairy Co.", contact: "09182345678", items: "Milk and Cheese" },
+    { id: "SUP-003", name: "Prime Meats", contact: "09193456789", items: "Meat Products" }
 ];
 
-function showPage(page) {
-  document.querySelectorAll(".page").forEach(section => {
-    section.classList.remove("active");
-  });
+// LOGIN
 
-  document.querySelectorAll(".nav button").forEach(button => {
-    button.classList.toggle("active", button.dataset.page === page);
-  });
+let currentUser = JSON.parse(localStorage.getItem("stocksense_user")) || null;
 
-  document.getElementById(page).classList.add("active");
+const loginForm = document.getElementById("loginForm");
 
-  const titles = {
-    dashboard: "Dashboard",
-    inventory: "Inventory",
-    menu: "Menu & Ordering",
-    orders: "Orders",
-    suppliers: "Suppliers",
-    applications: "Shop Applications",
-    reports: "Reports"
-  };
+loginForm.addEventListener("submit", function(event) {
+    event.preventDefault();
 
-  document.getElementById("pageTitle").textContent = titles[page];
-}
+    const name = document.getElementById("loginName").value.trim();
+    const role = document.getElementById("loginRole").value;
 
-document.getElementById("nav").addEventListener("click", event => {
-  const button = event.target.closest("button[data-page]");
+    if (!name) return;
 
-  if (button) {
-    showPage(button.dataset.page);
-  }
+    currentUser = {
+        name: name,
+        role: role
+    };
+
+    localStorage.setItem("stocksense_user", JSON.stringify(currentUser));
+
+    showApp();
 });
 
-function getStockStatus(item) {
-  if (item.qty <= 0) return "Out of stock";
-  if (item.qty <= item.threshold) return "Low stock";
-  return "In stock";
+function showApp() {
+    document.getElementById("loginScreen").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
+
+    document.getElementById("userNameLabel").textContent = currentUser.name;
+    document.getElementById("userRoleLabel").textContent = currentUser.role;
+
+    showPage("dashboard");
 }
 
-function getStatusClass(status) {
-  if (status === "Out of stock") return "out";
-  if (status === "Low stock") return "low";
-  if (status === "Pending") return "pending";
-  return "";
+// LOGOUT
+
+document.getElementById("logoutBtn").addEventListener("click", function() {
+    localStorage.removeItem("stocksense_user");
+    currentUser = null;
+
+    document.getElementById("app").classList.add("hidden");
+    document.getElementById("loginScreen").classList.remove("hidden");
+});
+
+// NAVIGATION
+
+document.getElementById("navigation").addEventListener("click", function(event) {
+    const button = event.target.closest("button[data-page]");
+
+    if (button) {
+        showPage(button.dataset.page);
+    }
+});
+
+function showPage(page) {
+
+    document.querySelectorAll(".nav-link").forEach(button => {
+        button.classList.toggle("active", button.dataset.page === page);
+    });
+
+    const titles = {
+        dashboard: "Dashboard",
+        inventory: "Inventory",
+        products: "Sales & Products",
+        purchases: "Purchases",
+        suppliers: "Suppliers",
+        batches: "Batch & Expiry",
+        reports: "Reports",
+        notifications: "Notifications",
+        settings: "Settings"
+    };
+
+    document.getElementById("pageTitle").textContent = titles[page];
+
+    const pages = {
+        dashboard: dashboardPage,
+        inventory: inventoryPage,
+        products: productsPage,
+        purchases: purchasesPage,
+        suppliers: suppliersPage,
+        batches: batchesPage,
+        reports: reportsPage,
+        notifications: notificationsPage,
+        settings: settingsPage
+    };
+
+    document.getElementById("pageContent").innerHTML = pages[page]();
+
+    attachEvents(page);
 }
 
-function renderInventory() {
-  const rows = document.getElementById("inventoryRows");
+// HELPER FUNCTIONS
 
-  rows.innerHTML = inventory.map((item, index) => {
-    const status = getStockStatus(item);
+function money(amount) {
+    return "₱" + Number(amount).toLocaleString("en-PH", {
+        minimumFractionDigits: 2
+    });
+}
+
+function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[character]);
+}
+
+function stockStatus(item) {
+    if (item.qty <= 0) return ["Out of Stock", "danger"];
+    if (item.qty <= item.minimum) return ["Low Stock", "warning"];
+    return ["In Stock", ""];
+}
+
+function showToast(message) {
+    const toast = document.getElementById("toast");
+
+    toast.textContent = message;
+    toast.classList.add("show");
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 2500);
+}
+
+// DASHBOARD
+
+function dashboardPage() {
+
+    const lowStock = inventory.filter(item =>
+        item.qty <= item.minimum
+    ).length;
 
     return `
-      <tr>
-        <td><b>${item.name}</b></td>
-        <td>${item.qty} ${item.unit}</td>
-        <td>${item.threshold} ${item.unit}</td>
-        <td><span class="status ${getStatusClass(status)}">${status}</span></td>
-        <td>
-          <button class="secondary small" onclick="editStock(${index})">Edit</button>
-        </td>
-      </tr>
+        <div class="welcome">
+            <h2>Welcome, ${escapeHTML(currentUser.name)}!</h2>
+            <p>Here's what's happening across your food shop today.</p>
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card">
+                <p>Active Orders</p>
+                <h2>12</h2>
+                <small>Pickup and shop orders</small>
+            </div>
+
+            <div class="stat-card">
+                <p>Inventory Items</p>
+                <h2>${inventory.length}</h2>
+                <small>Ingredients tracked</small>
+            </div>
+
+            <div class="stat-card">
+                <p>Low Stock Alerts</p>
+                <h2>${lowStock}</h2>
+                <small>Needs restocking</small>
+            </div>
+
+            <div class="stat-card">
+                <p>Today's Sales</p>
+                <h2>${money(8450)}</h2>
+                <small>Sample figure</small>
+            </div>
+
+        </div>
+
+        <div class="dashboard-grid">
+
+            <div class="panel">
+                <h3>📦 Inventory Watchlist</h3>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Ingredient</th>
+                                <th>Quantity</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${inventory.slice(0, 5).map(item => `
+                                <tr>
+                                    <td>${escapeHTML(item.name)}</td>
+                                    <td>${item.qty} ${escapeHTML(item.unit)}</td>
+                                    <td>
+                                        <span class="badge ${stockStatus(item)[1]}">
+                                            ${stockStatus(item)[0]}
+                                        </span>
+                                    </td>
+                                </tr>
+                            `).join("")}
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <div class="panel">
+                <h3>🔔 Alerts & Notifications</h3>
+
+                <div class="alert">
+                    <strong>⚠ Low Stock Alert</strong>
+                    Fresh milk is below its minimum stock level.
+                </div>
+
+                <div class="alert">
+                    <strong>◷ Expiry Reminder</strong>
+                    Lettuce is nearing its expiry date.
+                </div>
+
+                <div class="alert">
+                    <strong>📦 Purchase Reminder</strong>
+                    One purchase order is still pending.
+                </div>
+
+            </div>
+
+        </div>
+
+        <h2 class="section-title">Main Features</h2>
+
+        <div class="feature-grid">
+
+            ${feature("📦", "Inventory", "Manage ingredients.", "inventory")}
+            ${feature("🛒", "Sales & Products", "Manage menu products.", "products")}
+            ${feature("🧾", "Purchases", "Create purchase orders.", "purchases")}
+            ${feature("🚚", "Suppliers", "Manage suppliers.", "suppliers")}
+            ${feature("◷", "Batch & Expiry", "Track expiration dates.", "batches")}
+            ${feature("📊", "Reports", "View business reports.", "reports")}
+            ${feature("🔔", "Notifications", "Check system alerts.", "notifications")}
+            ${feature("⚙", "Settings", "Manage account settings.", "settings")}
+
+        </div>
     `;
-  }).join("");
-
-  renderWatchlist();
-  renderRestockList();
-  updateDashboardStats();
 }
 
-function renderWatchlist() {
-  const lowItems = inventory.filter(item => item.qty <= item.threshold);
+function feature(icon, title, description, page) {
+    return `
+        <button class="feature-card" data-go="${page}">
+            <div>${icon}</div>
+            <h3>${title}</h3>
+            <p>${description}</p>
+        </button>
+    `;
+}
 
-  document.getElementById("watchlist").innerHTML = lowItems.length
-    ? lowItems.map(item => `
-      <div class="alert">
-        <span>⚠</span>
-        <div>
-          <b>${item.name}</b><br>
-          ${item.qty} ${item.unit} remaining
+// INVENTORY
+
+function inventoryPage() {
+    return `
+        <div class="toolbar">
+            <input type="text" id="searchInventory"
+                placeholder="Search ingredients...">
+
+            <button class="primary-btn" id="addInventory">
+                + Add Ingredient
+            </button>
         </div>
-        <span class="status low">Low</span>
-      </div>
-    `).join("")
-    : `<p class="muted">All ingredients are sufficiently stocked.</p>`;
-}
 
-function renderRestockList() {
-  const lowItems = inventory.filter(item => item.qty <= item.threshold);
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ingredient</th>
+                        <th>Category</th>
+                        <th>Quantity</th>
+                        <th>Minimum Stock</th>
+                        <th>Status</th>
+                        <th>Expiry Date</th>
+                    </tr>
+                </thead>
 
-  document.getElementById("restockList").innerHTML = lowItems.length
-    ? lowItems.map(item => `
-      <div class="alert">
-        <span>＋</span>
-        <div>
-          <b>${item.name}</b><br>
-          Current stock: ${item.qty} ${item.unit}
+                <tbody id="inventoryRows">
+                    ${inventoryRows(inventory)}
+                </tbody>
+            </table>
         </div>
-      </div>
-    `).join("")
-    : `<p class="muted">No ingredients need restocking.</p>`;
+    `;
 }
 
-function updateDashboardStats() {
-  document.getElementById("statOrders").textContent =
-    orders.filter(order => order.status !== "Completed").length;
-
-  document.getElementById("statItems").textContent = inventory.length;
-
-  document.getElementById("statLow").textContent =
-    inventory.filter(item => item.qty <= item.threshold).length;
-
-  document.getElementById("reportOrders").textContent = orders.length;
+function inventoryRows(items) {
+    return items.map(item => `
+        <tr>
+            <td>${escapeHTML(item.name)}</td>
+            <td>${escapeHTML(item.category)}</td>
+            <td>${item.qty} ${escapeHTML(item.unit)}</td>
+            <td>${item.minimum} ${escapeHTML(item.unit)}</td>
+            <td>
+                <span class="badge ${stockStatus(item)[1]}">
+                    ${stockStatus(item)[0]}
+                </span>
+            </td>
+            <td>${item.expiry}</td>
+        </tr>
+    `).join("") || `
+        <tr><td colspan="6">No ingredients found.</td></tr>
+    `;
 }
 
-function openStockForm() {
-  document.getElementById("stockForm").style.display = "block";
-  document.getElementById("ingredientName").value = "";
-  document.getElementById("ingredientQty").value = "";
-  document.getElementById("ingredientThreshold").value = 5;
-  document.getElementById("stockForm").dataset.editIndex = "";
+// SALES AND PRODUCTS
+
+function productsPage() {
+    return `
+        <div class="panel">
+            <h3>Menu Products</h3>
+            <p>Available food products and their allergy information.</p>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product ID</th>
+                        <th>Product Name</th>
+                        <th>Price</th>
+                        <th>Allergy Information</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    ${products.map(product => `
+                        <tr>
+                            <td>${product.id}</td>
+                            <td>${product.name}</td>
+                            <td>${money(product.price)}</td>
+                            <td>${product.allergy}</td>
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+        </div>
+    `;
 }
 
-function editStock(index) {
-  const item = inventory[index];
+// PURCHASES
 
-  document.getElementById("stockForm").style.display = "block";
-  document.getElementById("ingredientName").value = item.name;
-  document.getElementById("ingredientQty").value = item.qty;
-  document.getElementById("ingredientUnit").value = item.unit;
-  document.getElementById("ingredientThreshold").value = item.threshold;
-  document.getElementById("stockForm").dataset.editIndex = index;
+function purchasesPage() {
+    return `
+        <div class="toolbar">
+            <h3>Purchase Orders</h3>
+            <button class="primary-btn" id="newPurchase">
+                + New Purchase
+            </button>
+        </div>
 
-  document.getElementById("stockForm").scrollIntoView({ behavior: "smooth" });
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Supplier</th>
+                        <th>Date</th>
+                        <th>Items</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    ${purchases.map(p => `
+                        <tr>
+                            <td>${p.id}</td>
+                            <td>${p.supplier}</td>
+                            <td>${p.date}</td>
+                            <td>${p.items}</td>
+                            <td>
+                                <span class="badge ${p.status === "Pending" ? "warning" : ""}">
+                                    ${p.status}
+                                </span>
+                            </td>
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+        </div>
+    `;
 }
 
-function saveStock() {
-  const name = document.getElementById("ingredientName").value.trim();
-  const qty = Number(document.getElementById("ingredientQty").value);
-  const unit = document.getElementById("ingredientUnit").value;
-  const threshold = Number(document.getElementById("ingredientThreshold").value);
+// SUPPLIERS
 
-  if (!name || document.getElementById("ingredientQty").value === "" || qty < 0 || threshold < 0) {
-    alert("Please enter valid ingredient details.");
-    return;
-  }
+function suppliersPage() {
+    return `
+        <h3 class="section-title">Supplier Directory</h3>
 
-  const editIndex = document.getElementById("stockForm").dataset.editIndex;
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Supplier ID</th>
+                        <th>Supplier Name</th>
+                        <th>Contact</th>
+                        <th>Supplied Items</th>
+                    </tr>
+                </thead>
 
-  const item = { name, qty, unit, threshold };
-
-  if (editIndex !== "") {
-    inventory[Number(editIndex)] = item;
-  } else {
-    inventory.push(item);
-  }
-
-  document.getElementById("stockForm").style.display = "none";
-  renderInventory();
+                <tbody>
+                    ${suppliers.map(s => `
+                        <tr>
+                            <td>${s.id}</td>
+                            <td>${s.name}</td>
+                            <td>${s.contact}</td>
+                            <td>${s.items}</td>
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+        </div>
+    `;
 }
 
-function renderMenu() {
-  document.getElementById("menuGrid").innerHTML = menu.map(item => `
-    <div class="menu-item">
-      <div class="food-icon">${item.icon}</div>
-      <h3>${item.name}</h3>
-      <p>${item.description}</p>
-      <span class="allergy">${item.allergy}</span>
-      <div class="price">₱${item.price.toFixed(2)}</div>
-      <button onclick="addToCart(${item.id})">Add to cart</button>
-    </div>
-  `).join("");
+// BATCH AND EXPIRY
+
+function batchesPage() {
+    return `
+        <h3 class="section-title">Batch and Expiry Monitoring</h3>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Batch ID</th>
+                        <th>Ingredient</th>
+                        <th>Quantity</th>
+                        <th>Expiry Date</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    ${inventory.map((item, index) => `
+                        <tr>
+                            <td>BAT-${1001 + index}</td>
+                            <td>${escapeHTML(item.name)}</td>
+                            <td>${item.qty} ${escapeHTML(item.unit)}</td>
+                            <td>${item.expiry}</td>
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+        </div>
+    `;
 }
 
-function addToCart(id) {
-  const item = menu.find(product => product.id === id);
-  const existing = cart.find(product => product.id === id);
+// REPORTS
 
-  if (existing) {
-    existing.quantity++;
-  } else {
-    cart.push({ ...item, quantity: 1 });
-  }
+function reportsPage() {
+    return `
+        <div class="stats-grid">
 
-  renderCart();
+            <div class="stat-card">
+                <p>Today's Sales</p>
+                <h2>${money(8450)}</h2>
+            </div>
+
+            <div class="stat-card">
+                <p>Orders</p>
+                <h2>12</h2>
+            </div>
+
+            <div class="stat-card">
+                <p>Inventory Items</p>
+                <h2>${inventory.length}</h2>
+            </div>
+
+            <div class="stat-card">
+                <p>Low Stock</p>
+                <h2>${inventory.filter(i => i.qty <= i.minimum).length}</h2>
+            </div>
+
+        </div>
+
+        <div class="panel">
+            <h3>Business Reports</h3>
+            <p>Download your current inventory report.</p>
+            <br>
+            <button class="primary-btn" id="exportCSV">
+                Download Inventory CSV
+            </button>
+        </div>
+    `;
 }
 
-function renderCart() {
-  const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+// NOTIFICATIONS
 
-  document.getElementById("cartCount").textContent = `${count} items in cart`;
-  document.getElementById("cartTotal").textContent = `₱${total.toFixed(2)}`;
+function notificationsPage() {
+    return `
+        <h3 class="section-title">System Notifications</h3>
 
-  document.getElementById("cartItems").innerHTML = cart.length
-    ? cart.map(item => `
-      <div style="display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding:8px 0">
-        <span>${item.name} × ${item.quantity}</span>
-        <span>₱${(item.price * item.quantity).toFixed(2)}</span>
-        <button class="secondary small" onclick="removeFromCart(${item.id})">Remove</button>
-      </div>
-    `).join("")
-    : "Your cart is empty. Add something tasty above.";
+        <div class="alert">
+            <strong>⚠ Low Stock Alert</strong>
+            Fresh milk needs restocking.
+        </div>
+
+        <div class="alert">
+            <strong>◷ Expiry Alert</strong>
+            Lettuce is nearing its expiry date.
+        </div>
+
+        <div class="alert">
+            <strong>📦 Purchase Notification</strong>
+            Purchase order PO-002 is pending.
+        </div>
+    `;
 }
 
-function removeFromCart(id) {
-  cart = cart.filter(item => item.id !== id);
-  renderCart();
+// SETTINGS
+
+function settingsPage() {
+    return `
+        <div class="panel">
+            <h3>Account Settings</h3>
+
+            <p>Account Name: ${escapeHTML(currentUser.name)}</p>
+            <br>
+            <p>Account Role: ${escapeHTML(currentUser.role)}</p>
+            <br>
+            <p>System: StockSense</p>
+            <br>
+            <p>Shop: Main Food Shop</p>
+        </div>
+    `;
 }
 
-function clearCart() {
-  cart = [];
-  renderCart();
-  document.getElementById("checkoutMessage").textContent = "";
+// PAGE EVENTS
+
+function attachEvents(page) {
+
+    // Navigation from dashboard feature cards
+    document.querySelectorAll("[data-go]").forEach(button => {
+        button.addEventListener("click", () => {
+            showPage(button.dataset.go);
+        });
+    });
+
+    // Search Inventory
+    if (page === "inventory") {
+
+        document.getElementById("searchInventory")
+            .addEventListener("input", function() {
+
+                const search = this.value.toLowerCase();
+
+                const filtered = inventory.filter(item =>
+                    item.name.toLowerCase().includes(search) ||
+                    item.category.toLowerCase().includes(search)
+                );
+
+                document.getElementById("inventoryRows").innerHTML =
+                    inventoryRows(filtered);
+            });
+
+        // Add Ingredient
+        document.getElementById("addInventory")
+            .addEventListener("click", function() {
+
+                const name = prompt("Enter ingredient name:");
+
+                if (!name || !name.trim()) return;
+
+                const qty = Number(prompt("Enter quantity:", "1"));
+
+                if (!Number.isFinite(qty) || qty < 0) {
+                    showToast("Invalid quantity.");
+                    return;
+                }
+
+                const unit = prompt("Enter unit (kg, L, pcs):", "kg");
+
+                if (!unit) return;
+
+                inventory.push({
+                    id: Date.now(),
+                    name: name.trim(),
+                    category: "Other",
+                    qty: qty,
+                    unit: unit,
+                    minimum: 2,
+                    expiry: "2027-01-01"
+                });
+
+                localStorage.setItem(
+                    "stocksense_inventory",
+                    JSON.stringify(inventory)
+                );
+
+                showPage("inventory");
+                showToast("Ingredient added successfully!");
+            });
+    }
+
+    // New Purchase
+    if (page === "purchases") {
+        document.getElementById("newPurchase")
+            .addEventListener("click", function() {
+                showToast("Purchase order feature is a prototype.");
+            });
+    }
+
+    // Export CSV
+    if (page === "reports") {
+        document.getElementById("exportCSV")
+            .addEventListener("click", exportCSV);
+    }
 }
 
-function placeOrder() {
-  const customer = document.getElementById("customerName").value.trim();
-  const pickup = document.getElementById("pickupTime").value;
-  const notes = document.getElementById("allergyNotes").value.trim();
-
-  if (!cart.length) {
-    alert("Your cart is empty.");
-    return;
-  }
-
-  if (!customer) {
-    alert("Please enter the customer name.");
-    return;
-  }
-
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
-  const items = cart.map(item => `${item.quantity} ${item.name}`).join(", ");
-
-  const newOrder = {
-    id: "ORD-" + (1000 + orders.length + 1),
-    customer,
-    pickup,
-    items,
-    notes: notes || "No special notes",
-    total,
-    status: "Pending"
-  };
-
-  orders.unshift(newOrder);
-
-  cart = [];
-  renderCart();
-  renderOrders();
-  renderRecentOrders();
-  updateDashboardStats();
-
-  document.getElementById("customerName").value = "";
-  document.getElementById("allergyNotes").value = "";
-
-  document.getElementById("checkoutMessage").textContent =
-    `Order ${newOrder.id} has been added successfully!`;
-}
-
-function renderOrders() {
-  document.getElementById("orderRows").innerHTML = orders.map((order, index) => `
-    <tr>
-      <td><b>${order.id}</b></td>
-      <td>${order.customer}</td>
-      <td>${order.pickup}</td>
-      <td>
-        ${order.items}<br>
-        <span class="muted">${order.notes}</span>
-      </td>
-      <td>₱${order.total.toFixed(2)}</td>
-      <td><span class="status ${getStatusClass(order.status)}">${order.status}</span></td>
-      <td>
-        <select onchange="updateOrderStatus(${index}, this.value)">
-          <option ${order.status === "Pending" ? "selected" : ""}>Pending</option>
-          <option ${order.status === "Preparing" ? "selected" : ""}>Preparing</option>
-          <option ${order.status === "Ready" ? "selected" : ""}>Ready</option>
-          <option ${order.status === "Completed" ? "selected" : ""}>Completed</option>
-        </select>
-      </td>
-    </tr>
-  `).join("");
-}
-
-function renderRecentOrders() {
-  document.getElementById("recentOrders").innerHTML = orders.slice(0, 5).map(order => `
-    <tr>
-      <td><b>${order.id}</b></td>
-      <td>${order.customer}</td>
-      <td>${order.pickup}</td>
-      <td>₱${order.total.toFixed(2)}</td>
-      <td><span class="status ${getStatusClass(order.status)}">${order.status}</span></td>
-    </tr>
-  `).join("");
-}
-
-function updateOrderStatus(index, status) {
-  orders[index].status = status;
-  renderOrders();
-  renderRecentOrders();
-  updateDashboardStats();
-}
-
-function renderApplications() {
-  document.getElementById("applicationRows").innerHTML =
-    applications.map((application, index) => `
-      <tr>
-        <td><b>${application.shop}</b></td>
-        <td>${application.owner}</td>
-        <td>${application.category}</td>
-        <td>${application.date}</td>
-        <td><span class="status ${getStatusClass(application.status)}">${application.status}</span></td>
-        <td>
-          ${application.status === "Pending" ? `
-            <button class="small" onclick="updateApplication(${index}, 'Approved')">Approve</button>
-            <button class="secondary small" onclick="updateApplication(${index}, 'Declined')">Decline</button>
-          ` : "—"}
-        </td>
-      </tr>
-    `).join("");
-}
-
-function updateApplication(index, status) {
-  applications[index].status = status;
-  renderApplications();
-}
+// EXPORT INVENTORY REPORT
 
 function exportCSV() {
-  const rows = [
-    ["Ingredient", "Quantity", "Unit", "Threshold", "Status"],
-    ...inventory.map(item => [
-      item.name,
-      item.qty,
-      item.unit,
-      item.threshold,
-      getStockStatus(item)
-    ])
-  ];
 
-  downloadCSV(rows, "stocksense-inventory.csv");
+    const header = [
+        "Ingredient",
+        "Category",
+        "Quantity",
+        "Unit",
+        "Minimum Stock",
+        "Expiry"
+    ];
+
+    const rows = inventory.map(item => [
+        item.name,
+        item.category,
+        item.qty,
+        item.unit,
+        item.minimum,
+        item.expiry
+    ]);
+
+    const csv = [header, ...rows]
+        .map(row => row.map(value =>
+            `"${String(value).replace(/"/g, '""')}"`
+        ).join(","))
+        .join("\n");
+
+    const blob = new Blob([csv], {
+        type: "text/csv;charset=utf-8;"
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "StockSense_Inventory_Report.csv";
+    link.click();
+
+    URL.revokeObjectURL(url);
+
+    showToast("Inventory report downloaded!");
 }
 
-function exportOrdersCSV() {
-  const rows = [
-    ["Order ID", "Customer", "Pickup", "Items", "Notes", "Total", "Status"],
-    ...orders.map(order => [
-      order.id,
-      order.customer,
-      order.pickup,
-      order.items,
-      order.notes,
-      order.total,
-      order.status
-    ])
-  ];
+// RESTORE SAVED INVENTORY
 
-  downloadCSV(rows, "stocksense-orders.csv");
+const savedInventory = localStorage.getItem("stocksense_inventory");
+
+if (savedInventory) {
+    try {
+        inventory = JSON.parse(savedInventory);
+    } catch (error) {
+        console.error("Could not load saved inventory:", error);
+    }
 }
 
-function downloadCSV(rows, filename) {
-  const csv = rows.map(row =>
-    row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(",")
-  ).join("\n");
+// START APPLICATION
 
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-
-  URL.revokeObjectURL(url);
+if (currentUser) {
+    showApp();
 }
-
-function initializeApp() {
-  renderInventory();
-  renderMenu();
-  renderCart();
-  renderOrders();
-  renderRecentOrders();
-  renderApplications();
-  updateDashboardStats();
-}
-
-initializeApp();
