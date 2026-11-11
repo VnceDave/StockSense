@@ -1069,9 +1069,60 @@ app.put("/api/sales/:id/cancel", async (req, res) => {
 // =====================================
 // GET ALL BATCHES
 // =====================================
+
+ // =====================================
+ // GET ALL PURCHASES
+ // =====================================
+
+app.get("/api/purchases", async (req, res) => {
+    try {
+        const [purchases] = await db.execute(`
+            SELECT
+                p.purchase_id,
+                p.supplier_id,
+                s.supplier_name,
+                p.reference_number,
+                p.purchase_date,
+                p.total_amount,
+                p.status,
+                p.notes,
+                p.created_by,
+                u.full_name AS created_by_name,
+                (
+                    SELECT COUNT(*)
+                    FROM purchase_items pi
+                    WHERE pi.purchase_id = p.purchase_id
+                ) AS item_count
+            FROM purchases p
+            LEFT JOIN suppliers s
+                ON p.supplier_id = s.supplier_id
+            LEFT JOIN users u
+                ON p.created_by = u.user_id
+            ORDER BY p.purchase_id DESC
+        `);
+
+        res.json({
+            success: true,
+            purchases
+        });
+
+    } catch (error) {
+        console.error("Get purchases error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to retrieve purchases."
+        });
+    }
+});
+
+// =====================================
+// GET ALL BATCHES
+// =====================================
+
 app.get("/api/batches", async (req, res) => {
     try {
-        const [batches] = await db.query(`
+        const [batches] = await db.execute(`
             SELECT
                 b.batch_id,
                 b.product_id,
@@ -1101,65 +1152,6 @@ app.get("/api/batches", async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Failed to load batches."
-        });
-    }
-});
-
-
-// GET PURCHASE DETAILS
-app.get("/api/purchases/:id", async (req, res) => {
-    const purchaseId = Number(req.params.id);
-
-    if (!validId(purchaseId)) {
-        return res.status(400).json({
-            message: "Invalid purchase ID."
-        });
-    }
-
-    try {
-        const [purchases] = await db.execute(`
-            SELECT
-                p.*,
-                s.supplier_name,
-                u.full_name AS created_by_name
-            FROM purchases p
-            LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id
-            LEFT JOIN users u ON p.created_by = u.user_id
-            WHERE p.purchase_id = ?
-        `, [purchaseId]);
-
-        if (!purchases.length) {
-            return res.status(404).json({
-                message: "Purchase not found."
-            });
-        }
-
-        const [items] = await db.execute(`
-            SELECT
-                pi.purchase_item_id,
-                pi.product_id,
-                pr.sku,
-                pr.product_name,
-                pi.quantity,
-                pi.unit_cost,
-                pi.subtotal,
-                pi.expiry_date
-            FROM purchase_items pi
-            INNER JOIN products pr ON pi.product_id = pr.product_id
-            WHERE pi.purchase_id = ?
-            ORDER BY pi.purchase_item_id
-        `, [purchaseId]);
-
-        res.json({
-            success: true,
-            purchase: purchases[0],
-            items
-        });
-
-    } catch (error) {
-        console.error("Purchase details error:", error);
-        res.status(500).json({
-            message: "Failed to retrieve purchase details."
         });
     }
 });
