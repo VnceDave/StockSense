@@ -44,63 +44,120 @@ const suppliers = [
 
 // LOGIN
 
-let currentUser = JSON.parse(localStorage.getItem("stocksense_user")) || null;
+function safeParseJson(value, fallback) {
+    if (!value) return fallback;
+
+    try {
+        return JSON.parse(value);
+    } catch (error) {
+        console.error("Could not parse saved data:", error);
+        return fallback;
+    }
+}
+
+function getStoredValue(key, fallback) {
+    try {
+        return safeParseJson(localStorage.getItem(key), fallback);
+    } catch (error) {
+        console.error("Could not read storage:", error);
+        return fallback;
+    }
+}
+
+let currentUser = getStoredValue("stocksense_user", null);
 
 const loginForm = document.getElementById("loginForm");
 
-loginForm.addEventListener("submit", function(event) {
-    event.preventDefault();
+if (loginForm) {
+    loginForm.addEventListener("submit", function(event) {
+        event.preventDefault();
 
-    const name = document.getElementById("loginName").value.trim();
-    const role = document.getElementById("loginRole").value;
+        const nameInput = document.getElementById("loginName");
+        const roleInput = document.getElementById("loginRole");
 
-    if (!name) return;
+        if (!nameInput || !roleInput) return;
 
-    currentUser = {
-        name: name,
-        role: role
-    };
+        const name = nameInput.value.trim();
+        const role = roleInput.value;
 
-    localStorage.setItem("stocksense_user", JSON.stringify(currentUser));
+        if (!name) return;
 
-    showApp();
-});
+        currentUser = {
+            name: name,
+            role: role
+        };
+
+        try {
+            localStorage.setItem("stocksense_user", JSON.stringify(currentUser));
+        } catch (error) {
+            console.error("Could not save user session:", error);
+        }
+
+        showApp();
+    });
+}
 
 function showApp() {
-    document.getElementById("loginScreen").classList.add("hidden");
-    document.getElementById("app").classList.remove("hidden");
+    const loginScreen = document.getElementById("loginScreen");
+    const app = document.getElementById("app");
+    const userNameLabel = document.getElementById("userNameLabel");
+    const userRoleLabel = document.getElementById("userRoleLabel");
 
-    document.getElementById("userNameLabel").textContent = currentUser.name;
-    document.getElementById("userRoleLabel").textContent = currentUser.role;
+    if (!currentUser || !loginScreen || !app || !userNameLabel || !userRoleLabel) return;
+
+    loginScreen.classList.add("hidden");
+    app.classList.remove("hidden");
+
+    userNameLabel.textContent = currentUser.name;
+    userRoleLabel.textContent = currentUser.role;
 
     showPage("dashboard");
 }
 
 // LOGOUT
 
-document.getElementById("logoutBtn").addEventListener("click", function() {
-    localStorage.removeItem("stocksense_user");
-    currentUser = null;
+const logoutBtn = document.getElementById("logoutBtn");
 
-    document.getElementById("app").classList.add("hidden");
-    document.getElementById("loginScreen").classList.remove("hidden");
-});
+if (logoutBtn) {
+    logoutBtn.addEventListener("click", function() {
+        try {
+            localStorage.removeItem("stocksense_user");
+        } catch (error) {
+            console.error("Could not clear user session:", error);
+        }
+        currentUser = null;
+
+        const app = document.getElementById("app");
+        const loginScreen = document.getElementById("loginScreen");
+
+        if (app) app.classList.add("hidden");
+        if (loginScreen) loginScreen.classList.remove("hidden");
+    });
+}
 
 // NAVIGATION
 
-document.getElementById("navigation").addEventListener("click", function(event) {
-    const button = event.target.closest("button[data-page]");
+const navigation = document.getElementById("navigation");
 
-    if (button) {
-        showPage(button.dataset.page);
-    }
-});
+if (navigation) {
+    navigation.addEventListener("click", function(event) {
+        const button = event.target.closest("button[data-page]");
+
+        if (button) {
+            showPage(button.dataset.page);
+        }
+    });
+}
 
 function showPage(page) {
+    const navButtons = document.querySelectorAll(".nav-link");
+    const pageContent = document.getElementById("pageContent");
 
-    document.querySelectorAll(".nav-link").forEach(button => {
-        button.classList.toggle("active", button.dataset.page === page);
-    });
+    if (pageContent) {
+        document.querySelectorAll(".nav-link").forEach(button => {
+            button.classList.toggle("active", button.dataset.page === page);
+        });
+    }
 
     const titles = {
         dashboard: "Dashboard",
@@ -694,13 +751,13 @@ function exportCSV() {
 
 // RESTORE SAVED INVENTORY
 
-const savedInventory = localStorage.getItem("stocksense_inventory");
+const savedInventory = getStoredValue("stocksense_inventory", null);
 
 if (savedInventory) {
-    try {
-        inventory = JSON.parse(savedInventory);
-    } catch (error) {
-        console.error("Could not load saved inventory:", error);
+    if (Array.isArray(savedInventory)) {
+        inventory = savedInventory;
+    } else {
+        console.error("Saved inventory is not a valid array.");
     }
 }
 
