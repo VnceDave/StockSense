@@ -4,86 +4,256 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#126b48">
     <title>StockSense | Food Business Management</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- LOGIN -->
-    <section id="loginScreen" class="login-screen">
-        <div class="login-card">
-            <h1>🥬 StockSense</h1>
-            <p>SMART STOCK. FRESH FOOD.</p>
-            <h2>Welcome Back!</h2>
+    <!-- LOGIN AND REGISTER -->
+    <main id="authScreen" class="auth-screen">
+        <section class="auth-card">
 
-            <form id="loginForm">
-                <label>Your Name</label>
-                <input type="text" id="loginName"
-                    placeholder="Enter your name" required>
+            <div class="brand-mark">🥬</div>
+            <h1>StockSense</h1>
+            <p class="tagline">SMART STOCK. FRESH FOOD.</p>
 
-                <label>Login Role</label>
-                <select id="loginRole">
-                    <option>Admin</option>
-                    <option>Shop Owner</option>
-                    <option>Staff</option>
-                </select>
+            <div class="auth-tabs">
+                <button class="auth-tab active" type="button" data-auth-tab="login">
+                    Login
+                </button>
 
-                <button type="submit">Login</button>
+                <button class="auth-tab" type="button" data-auth-tab="register">
+                    Create account
+                </button>
+            </div>
+
+            <!-- LOGIN FORM -->
+            <form id="loginForm" class="auth-form">
+
+                <h2>Welcome back!</h2>
+                <p class="muted">Sign in to manage your food business.</p>
+
+                <label for="loginUsername">Username or email</label>
+                <input
+                    id="loginUsername"
+                    name="username"
+                    autocomplete="username"
+                    required
+                >
+
+                <label for="loginPassword">Password</label>
+                <input
+                    id="loginPassword"
+                    name="password"
+                    type="password"
+                    autocomplete="current-password"
+                    required
+                >
+
+                <button class="btn btn-primary full" type="submit">
+                    Login
+                </button>
+
+                <p class="form-message" id="loginMessage" aria-live="polite"></p>
+
             </form>
-        </div>
-    </section>
+
+            <!-- REGISTER FORM -->
+            <form id="registerForm" class="auth-form hidden">
+
+                <h2>Create your account</h2>
+                <p class="muted">Your account will be saved securely.</p>
+
+                <label for="registerName">Full name</label>
+                <input
+                    id="registerName"
+                    name="full_name"
+                    autocomplete="name"
+                    required
+                >
+
+                <label for="registerUsername">Username</label>
+                <input
+                    id="registerUsername"
+                    name="username"
+                    autocomplete="username"
+                    minlength="3"
+                    required
+                >
+
+                <label for="registerEmail">Email</label>
+                <input
+                    id="registerEmail"
+                    name="email"
+                    type="email"
+                    autocomplete="email"
+                    required
+                >
+
+                <label for="registerPassword">Password (at least 8 characters)</label>
+                <input
+                    id="registerPassword"
+                    name="password"
+                    type="password"
+                    autocomplete="new-password"
+                    minlength="8"
+                    required
+                >
+
+                <button class="btn btn-primary full" type="submit">
+                    Create account
+                </button>
+
+                <p class="form-message" id="registerMessage" aria-live="polite"></p>
+
+            </form>
+
+            <p class="auth-note">
+                StockSense Food Business Management System
+            </p>
+
+        </section>
+    </main>
 
     <!-- MAIN APPLICATION -->
     <div id="app" class="app hidden">
 
+        <!-- SIDEBAR -->
         <aside class="sidebar">
-            <div class="brand">
-                <h2>🥬 StockSense</h2>
-                <small>Smart Stock. Fresh Food.</small>
-            </div>
 
-            <p class="nav-label">MAIN MENU</p>
+            <a class="brand" href="#" aria-label="StockSense dashboard">
+                <span class="brand-icon">🥬</span>
+
+                <span>
+                    <strong>StockSense</strong>
+                    <small>Smart Stock. Fresh Food.</small>
+                </span>
+            </a>
+
+            <p class="nav-label">WORKSPACE</p>
 
             <nav id="navigation">
-                <button class="nav-link active" data-page="dashboard">▦ Dashboard</button>
-                <button class="nav-link" data-page="inventory">📦 Inventory</button>
-                <button class="nav-link" data-page="products">🛒 Sales & Products</button>
-                <button class="nav-link" data-page="purchases">🧾 Purchases</button>
-                <button class="nav-link" data-page="suppliers">🚚 Suppliers</button>
-                <button class="nav-link" data-page="batches">◷ Batch & Expiry</button>
-                <button class="nav-link" data-page="reports">📊 Reports</button>
-                <button class="nav-link" data-page="notifications">🔔 Notifications</button>
-                <button class="nav-link" data-page="settings">⚙ Settings</button>
+
+                <button class="nav-link active" data-page="dashboard">
+                    ▦ <span>Dashboard</span>
+                </button>
+
+                <button class="nav-link" data-page="inventory">
+                    📦 <span>Inventory</span>
+                </button>
+
+                <button class="nav-link" data-page="products">
+                    🛒 <span>Products</span>
+                </button>
+
+                <button class="nav-link" data-page="sales">
+                    💳 <span>Sales</span>
+                </button>
+
+                <button class="nav-link" data-page="purchases">
+                    🧾 <span>Purchases</span>
+                </button>
+
+                <button class="nav-link" data-page="suppliers">
+                    🚚 <span>Suppliers</span>
+                </button>
+
+                <button class="nav-link" data-page="batches">
+                    ◷ <span>Batch & Expiry</span>
+                </button>
+
+                <button class="nav-link" data-page="reports">
+                    📊 <span>Reports</span>
+                </button>
+
+                <button class="nav-link" data-page="notifications">
+                    🔔 <span>Notifications</span>
+                </button>
+
             </nav>
 
+            <!-- LOGGED-IN USER -->
             <div class="sidebar-bottom">
-                <p id="userNameLabel">User</p>
-                <small id="userRoleLabel">Staff</small>
-                <button id="logoutBtn" class="logout">Logout</button>
+
+                <div class="user-avatar" id="userAvatar">U</div>
+
+                <div class="user-info">
+                    <strong id="userNameLabel">User</strong>
+                    <small id="userRoleLabel">Staff</small>
+                </div>
+
+                <button
+                    id="logoutBtn"
+                    class="logout-btn"
+                    title="Logout"
+                    aria-label="Logout"
+                >
+                    ↪
+                </button>
+
             </div>
+
         </aside>
 
+        <!-- MAIN CONTENT -->
         <main class="main-content">
 
             <header class="topbar">
+
                 <div>
-                    <p>STOCKSENSE MANAGEMENT SYSTEM</p>
+                    <p class="eyebrow">
+                        STOCKSENSE MANAGEMENT SYSTEM
+                    </p>
+
                     <h1 id="pageTitle">Dashboard</h1>
                 </div>
-                <span class="online">● System Online</span>
+
+                <div class="topbar-right">
+
+                    <span class="status-pill">
+                        <i></i> Connected app
+                    </span>
+
+                    <button
+                        class="mobile-logout"
+                        id="mobileLogoutBtn"
+                        type="button"
+                    >
+                        Logout
+                    </button>
+
+                </div>
+
             </header>
 
-            <section id="pageContent"></section>
+            <!-- DYNAMIC PAGE CONTENT -->
+            <section id="pageContent" aria-live="polite"></section>
 
             <footer>
-                © 2026 StockSense | Food Business Management System
+                © 2026 StockSense · Food Business Management System
             </footer>
 
         </main>
+
     </div>
 
-    <div id="toast" class="toast"></div>
+    <!-- MODALS AND NOTIFICATIONS -->
+    <div id="modalRoot"></div>
+
+    <div
+        id="toast"
+        class="toast"
+        role="status"
+        aria-live="polite"
+    ></div>
 
     <script src="script.js"></script>
+
 </body>
 </html>

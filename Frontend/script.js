@@ -1,768 +1,2490 @@
 
-// =====================================
-// STOCKSENSE - MAIN JAVASCRIPT
-// =====================================
+const API_BASE = "http://localhost:3000/api";
 
-// SAMPLE INVENTORY DATA
+let currentUser = null;
+let authToken = localStorage.getItem("stocksense_token") || "";
 
-let inventory = [
-    { id: 1, name: "Chicken Breast", category: "Meat", qty: 18, unit: "kg", minimum: 5, expiry: "2026-11-15" },
-    { id: 2, name: "Rice", category: "Dry Goods", qty: 42, unit: "kg", minimum: 10, expiry: "2027-02-10" },
-    { id: 3, name: "Fresh Milk", category: "Dairy", qty: 3, unit: "L", minimum: 4, expiry: "2026-11-12" },
-    { id: 4, name: "Cooking Oil", category: "Pantry", qty: 7, unit: "L", minimum: 3, expiry: "2027-01-20" },
-    { id: 5, name: "Coffee Beans", category: "Beverage", qty: 2, unit: "packs", minimum: 3, expiry: "2027-01-05" },
-    { id: 6, name: "Lettuce", category: "Produce", qty: 3, unit: "kg", minimum: 3, expiry: "2026-11-11" },
-    { id: 7, name: "Cheese", category: "Dairy", qty: 8, unit: "kg", minimum: 4, expiry: "2026-11-20" },
-    { id: 8, name: "Peanuts", category: "Allergen", qty: 1, unit: "kg", minimum: 2, expiry: "2027-03-01" }
-];
+let inventoryData = [];
+let productsData = [];
+let suppliersData = [];
+let salesData = [];
+let salesCart = [];
+let purchasesData = [];
+let purchaseItems = [];
 
-// SAMPLE PRODUCTS
+let productSearch = "";
+let supplierSearch = "";
 
-const products = [
-    { id: "P001", name: "Chicken Rice Bowl", price: 145, allergy: "None listed" },
-    { id: "P002", name: "Beef Tapa Bowl", price: 165, allergy: "Soy" },
-    { id: "P003", name: "Creamy Pasta", price: 135, allergy: "Milk, Wheat" },
-    { id: "P004", name: "Fresh Garden Salad", price: 110, allergy: "None listed" },
-    { id: "P005", name: "Satay Bowl", price: 155, allergy: "Peanuts" },
-    { id: "P006", name: "Iced Coffee", price: 85, allergy: "Milk" }
-];
-
-// SAMPLE PURCHASES
-
-const purchases = [
-    { id: "PO-001", supplier: "FreshFarm Trading", date: "2026-11-08", items: "Lettuce, Tomatoes", status: "Received" },
-    { id: "PO-002", supplier: "Daily Dairy Co.", date: "2026-11-09", items: "Milk, Cheese", status: "Pending" }
-];
-
-// SAMPLE SUPPLIERS
-
-const suppliers = [
-    { id: "SUP-001", name: "FreshFarm Trading", contact: "09171234567", items: "Vegetables" },
-    { id: "SUP-002", name: "Daily Dairy Co.", contact: "09182345678", items: "Milk and Cheese" },
-    { id: "SUP-003", name: "Prime Meats", contact: "09193456789", items: "Meat Products" }
-];
-
-// LOGIN
-
-function safeParseJson(value, fallback) {
-    if (!value) return fallback;
-
-    try {
-        return JSON.parse(value);
-    } catch (error) {
-        console.error("Could not parse saved data:", error);
-        return fallback;
-    }
+try {
+    currentUser = JSON.parse(localStorage.getItem("stocksense_user") || "null");
+} catch {
+    currentUser = null;
 }
 
-function getStoredValue(key, fallback) {
-    try {
-        return safeParseJson(localStorage.getItem(key), fallback);
-    } catch (error) {
-        console.error("Could not read storage:", error);
-        return fallback;
-    }
-}
-
-let currentUser = getStoredValue("stocksense_user", null);
+const authScreen = document.getElementById("authScreen");
+const app = document.getElementById("app");
+const pageContent = document.getElementById("pageContent");
+const pageTitle = document.getElementById("pageTitle");
+const navigation = document.getElementById("navigation");
+const modalRoot = document.getElementById("modalRoot");
+const toastElement = document.getElementById("toast");
 
 const loginForm = document.getElementById("loginForm");
+const registerForm = document.getElementById("registerForm");
 
-if (loginForm) {
-    loginForm.addEventListener("submit", function(event) {
-        event.preventDefault();
+// ==============================
+// GENERAL HELPERS
+// ==============================
 
-        const nameInput = document.getElementById("loginName");
-        const roleInput = document.getElementById("loginRole");
+function setHidden(element, shouldHide) {
+    if (!element) return;
 
-        if (!nameInput || !roleInput) return;
-
-        const name = nameInput.value.trim();
-        const role = roleInput.value;
-
-        if (!name) return;
-
-        currentUser = {
-            name: name,
-            role: role
-        };
-
-        try {
-            localStorage.setItem("stocksense_user", JSON.stringify(currentUser));
-        } catch (error) {
-            console.error("Could not save user session:", error);
-        }
-
-        showApp();
-    });
+    element.hidden = shouldHide;
+    element.classList.toggle("hidden", shouldHide);
 }
 
-function showApp() {
-    const loginScreen = document.getElementById("loginScreen");
-    const app = document.getElementById("app");
-    const userNameLabel = document.getElementById("userNameLabel");
-    const userRoleLabel = document.getElementById("userRoleLabel");
 
-    if (!currentUser || !loginScreen || !app || !userNameLabel || !userRoleLabel) return;
+async function apiRequest(endpoint, options = {}) {
+    let response;
 
-    loginScreen.classList.add("hidden");
-    app.classList.remove("hidden");
-
-    userNameLabel.textContent = currentUser.name;
-    userRoleLabel.textContent = currentUser.role;
-
-    showPage("dashboard");
-}
-
-// LOGOUT
-
-const logoutBtn = document.getElementById("logoutBtn");
-
-if (logoutBtn) {
-    logoutBtn.addEventListener("click", function() {
-        try {
-            localStorage.removeItem("stocksense_user");
-        } catch (error) {
-            console.error("Could not clear user session:", error);
-        }
-        currentUser = null;
-
-        const app = document.getElementById("app");
-        const loginScreen = document.getElementById("loginScreen");
-
-        if (app) app.classList.add("hidden");
-        if (loginScreen) loginScreen.classList.remove("hidden");
-    });
-}
-
-// NAVIGATION
-
-const navigation = document.getElementById("navigation");
-
-if (navigation) {
-    navigation.addEventListener("click", function(event) {
-        const button = event.target.closest("button[data-page]");
-
-        if (button) {
-            showPage(button.dataset.page);
-        }
-    });
-}
-
-function showPage(page) {
-    const navButtons = document.querySelectorAll(".nav-link");
-    const pageContent = document.getElementById("pageContent");
-
-    if (pageContent) {
-        document.querySelectorAll(".nav-link").forEach(button => {
-            button.classList.toggle("active", button.dataset.page === page);
+    try {
+        response = await fetch(`${API_BASE}${endpoint}`, {
+            ...options,
+            headers: {
+                "Content-Type": "application/json",
+                ...(authToken ? {
+                    Authorization: `Bearer ${authToken}`
+                } : {}),
+                ...options.headers
+            }
         });
+    } catch (error) {
+        console.error("FETCH ERROR:", error);
+        throw new Error(
+            "Cannot connect to the server. Check if the backend is running."
+        );
     }
 
-    const titles = {
-        dashboard: "Dashboard",
-        inventory: "Inventory",
-        products: "Sales & Products",
-        purchases: "Purchases",
-        suppliers: "Suppliers",
-        batches: "Batch & Expiry",
-        reports: "Reports",
-        notifications: "Notifications",
-        settings: "Settings"
-    };
+    const responseText = await response.text();
 
-    document.getElementById("pageTitle").textContent = titles[page];
+    let data = {};
 
-    const pages = {
-        dashboard: dashboardPage,
-        inventory: inventoryPage,
-        products: productsPage,
-        purchases: purchasesPage,
-        suppliers: suppliersPage,
-        batches: batchesPage,
-        reports: reportsPage,
-        notifications: notificationsPage,
-        settings: settingsPage
-    };
+    try {
+        data = responseText ? JSON.parse(responseText) : {};
+    } catch {
+        data = { message: responseText };
+    }
 
-    document.getElementById("pageContent").innerHTML = pages[page]();
+    if (!response.ok) {
+        console.error("API REQUEST FAILED:", {
+            endpoint: endpoint,
+            status: response.status,
+            response: data
+        });
 
-    attachEvents(page);
+        throw new Error(
+            data.message ||
+            data.error ||
+            `Request failed with status ${response.status}`
+        );
+    }
+
+    return data;
 }
 
-// HELPER FUNCTIONS
+function showToast(message) {
+    if (!toastElement) {
+        alert(message);
+        return;
+    }
 
-function money(amount) {
-    return "₱" + Number(amount).toLocaleString("en-PH", {
-        minimumFractionDigits: 2
-    });
+    toastElement.textContent = message;
+    toastElement.classList.add("show");
+
+    setTimeout(() => toastElement.classList.remove("show"), 3000);
 }
 
 function escapeHTML(value) {
-    return String(value).replace(/[&<>"']/g, character => ({
+    return String(value ?? "").replace(/[&<>"']/g, character => ({
         "&": "&amp;",
         "<": "&lt;",
         ">": "&gt;",
         '"': "&quot;",
-        "'": "&#39;"
+        "'": "&#039;"
     })[character]);
 }
 
-function stockStatus(item) {
-    if (item.qty <= 0) return ["Out of Stock", "danger"];
-    if (item.qty <= item.minimum) return ["Low Stock", "warning"];
-    return ["In Stock", ""];
+function getCurrentUserId() {
+    return currentUser?.user_id ?? currentUser?.id ?? null;
 }
 
-function showToast(message) {
-    const toast = document.getElementById("toast");
-
-    toast.textContent = message;
-    toast.classList.add("show");
-
-    setTimeout(() => {
-        toast.classList.remove("show");
-    }, 2500);
+function formatCurrency(value) {
+    return `₱${Number(value || 0).toFixed(2)}`;
 }
 
+function formatDate(value) {
+    if (!value) return "—";
+
+    const date = new Date(value);
+
+    return Number.isNaN(date.getTime())
+        ? "—"
+        : date.toLocaleString();
+}
+
+// ==============================
+// AUTHENTICATION
+// ==============================
+
+function showApp() {
+    setHidden(authScreen, true);
+    setHidden(app, false);
+
+    const displayName =
+        currentUser?.name ||
+        currentUser?.full_name ||
+        currentUser?.username ||
+        "User";
+
+    const nameLabel = document.getElementById("userNameLabel");
+    const roleLabel = document.getElementById("userRoleLabel");
+    const avatar = document.getElementById("userAvatar");
+
+    if (nameLabel) nameLabel.textContent = displayName;
+    if (roleLabel) roleLabel.textContent = currentUser?.role || "User";
+    if (avatar) avatar.textContent = displayName.charAt(0).toUpperCase();
+
+    showPage("dashboard");
+}
+
+function showAuth() {
+    setHidden(authScreen, false);
+    setHidden(app, true);
+    setHidden(loginForm, false);
+    setHidden(registerForm, true);
+
+    document.querySelectorAll("[data-auth-tab]").forEach(tab => {
+        tab.classList.toggle("active", tab.dataset.authTab === "login");
+    });
+}
+
+function logout() {
+    localStorage.removeItem("stocksense_token");
+    localStorage.removeItem("stocksense_user");
+
+    authToken = "";
+    currentUser = null;
+
+    if (modalRoot) modalRoot.innerHTML = "";
+
+    showAuth();
+    showToast("You have logged out.");
+}
+
+// LOGIN
+if (loginForm) {
+    loginForm.addEventListener("submit", async event => {
+        event.preventDefault();
+
+        const username = document.getElementById("loginUsername").value.trim();
+        const password = document.getElementById("loginPassword").value;
+
+        if (!username || !password) {
+            showToast("Please enter your username and password.");
+            return;
+        }
+
+        const button = loginForm.querySelector('button[type="submit"]');
+
+        try {
+            if (button) {
+                button.disabled = true;
+                button.textContent = "Logging in...";
+            }
+
+            const result = await apiRequest("/login", {
+                method: "POST",
+                body: JSON.stringify({ username, password })
+            });
+
+            if (!result.token || !result.user) {
+                throw new Error("Incomplete login response.");
+            }
+
+            authToken = result.token;
+            currentUser = result.user;
+
+            localStorage.setItem("stocksense_token", authToken);
+            localStorage.setItem("stocksense_user", JSON.stringify(currentUser));
+
+            loginForm.reset();
+            showApp();
+            showToast("Login successful!");
+
+        } catch (error) {
+            showToast(error.message);
+        } finally {
+            if (button) {
+                button.disabled = false;
+                button.textContent = "Login";
+            }
+        }
+    });
+}
+
+// REGISTER
+if (registerForm) {
+    registerForm.addEventListener("submit", async event => {
+        event.preventDefault();
+
+        const name = document.getElementById("registerName").value.trim();
+        const username = document.getElementById("registerUsername").value.trim();
+        const email = document.getElementById("registerEmail").value.trim();
+        const password = document.getElementById("registerPassword").value;
+
+        if (!name || !username || !email || !password) {
+            showToast("Please complete all required fields.");
+            return;
+        }
+
+        if (password.length < 8) {
+            showToast("Password must have at least 8 characters.");
+            return;
+        }
+
+        const button = registerForm.querySelector('button[type="submit"]');
+
+        try {
+            if (button) {
+                button.disabled = true;
+                button.textContent = "Creating account...";
+            }
+
+            const result = await apiRequest("/register", {
+                method: "POST",
+                body: JSON.stringify({ name, username, email, password })
+            });
+
+            showToast(result.message || "Account created successfully!");
+            registerForm.reset();
+
+            document.querySelector('[data-auth-tab="login"]')?.click();
+
+        } catch (error) {
+            showToast(error.message);
+        } finally {
+            if (button) {
+                button.disabled = false;
+                button.textContent = "Create account";
+            }
+        }
+    });
+}
+
+// AUTH TABS
+document.querySelectorAll("[data-auth-tab]").forEach(tab => {
+    tab.addEventListener("click", () => {
+        const selected = tab.dataset.authTab;
+
+        document.querySelectorAll("[data-auth-tab]").forEach(item => {
+            item.classList.toggle("active", item === tab);
+        });
+
+        setHidden(loginForm, selected !== "login");
+        setHidden(registerForm, selected !== "register");
+    });
+});
+
+// LOGOUT BUTTONS
+document.getElementById("logoutBtn")?.addEventListener("click", logout);
+document.getElementById("mobileLogoutBtn")?.addEventListener("click", logout);
+
+// ==============================
+// NAVIGATION
+// ==============================
+
+if (navigation) {
+    navigation.addEventListener("click", event => {
+        const link = event.target.closest("[data-page]");
+        if (!link) return;
+
+        event.preventDefault();
+        showPage(link.dataset.page);
+    });
+}
+
+const pageNames = {
+    dashboard: "Dashboard",
+    inventory: "Inventory",
+    products: "Products",
+    sales: "Sales",
+    purchases: "Purchases",
+    suppliers: "Suppliers",
+    batches: "Batches",
+    reports: "Reports",
+    notifications: "Notifications"
+};
+
+function showPage(page) {
+    if (!pageContent) return;
+
+    document.querySelectorAll("[data-page]").forEach(link => {
+        link.classList.toggle("active", link.dataset.page === page);
+    });
+
+    if (pageTitle) {
+        pageTitle.textContent = pageNames[page] || "Dashboard";
+    }
+
+    switch (page) {
+        case "dashboard":
+            renderDashboard();
+            break;
+
+        case "inventory":
+            renderInventory();
+            break;
+
+        case "products":
+            renderProducts();
+            break;
+
+        case "sales":
+            renderSales();
+            break;
+
+        case "purchases":
+            renderPurchases();
+            break;
+
+        case "suppliers":
+            renderSuppliers();
+            break;
+
+        default:
+            renderComingSoon(page);
+    }
+}
+
+// ==============================
 // DASHBOARD
+// ==============================
 
-function dashboardPage() {
-
-    const lowStock = inventory.filter(item =>
-        item.qty <= item.minimum
-    ).length;
-
-    return `
-        <div class="welcome">
-            <h2>Welcome, ${escapeHTML(currentUser.name)}!</h2>
-            <p>Here's what's happening across your food shop today.</p>
-        </div>
-
+function renderDashboard() {
+    pageContent.innerHTML = `
         <div class="stats-grid">
-
-            <div class="stat-card">
-                <p>Active Orders</p>
-                <h2>12</h2>
-                <small>Pickup and shop orders</small>
-            </div>
-
-            <div class="stat-card">
-                <p>Inventory Items</p>
-                <h2>${inventory.length}</h2>
-                <small>Ingredients tracked</small>
-            </div>
-
-            <div class="stat-card">
-                <p>Low Stock Alerts</p>
-                <h2>${lowStock}</h2>
-                <small>Needs restocking</small>
-            </div>
-
-            <div class="stat-card">
-                <p>Today's Sales</p>
-                <h2>${money(8450)}</h2>
-                <small>Sample figure</small>
-            </div>
-
-        </div>
-
-        <div class="dashboard-grid">
-
             <div class="panel">
-                <h3>📦 Inventory Watchlist</h3>
-
-                <div class="table-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Ingredient</th>
-                                <th>Quantity</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${inventory.slice(0, 5).map(item => `
-                                <tr>
-                                    <td>${escapeHTML(item.name)}</td>
-                                    <td>${item.qty} ${escapeHTML(item.unit)}</td>
-                                    <td>
-                                        <span class="badge ${stockStatus(item)[1]}">
-                                            ${stockStatus(item)[0]}
-                                        </span>
-                                    </td>
-                                </tr>
-                            `).join("")}
-                        </tbody>
-                    </table>
-                </div>
-
+                <p>Total Products</p>
+                <h2 id="dashboardProducts">0</h2>
             </div>
 
             <div class="panel">
-                <h3>🔔 Alerts & Notifications</h3>
-
-                <div class="alert">
-                    <strong>⚠ Low Stock Alert</strong>
-                    Fresh milk is below its minimum stock level.
-                </div>
-
-                <div class="alert">
-                    <strong>◷ Expiry Reminder</strong>
-                    Lettuce is nearing its expiry date.
-                </div>
-
-                <div class="alert">
-                    <strong>📦 Purchase Reminder</strong>
-                    One purchase order is still pending.
-                </div>
-
+                <p>Total Stock</p>
+                <h2 id="dashboardStock">0</h2>
             </div>
 
+            <div class="panel">
+                <p>Low Stock Items</p>
+                <h2 id="dashboardLowStock">0</h2>
+            </div>
         </div>
 
-        <h2 class="section-title">Main Features</h2>
+        <section class="panel">
+            <h3>Welcome to StockSense</h3>
+            <p>Manage your products and monitor your inventory in one place.</p>
 
-        <div class="feature-grid">
-
-            ${feature("📦", "Inventory", "Manage ingredients.", "inventory")}
-            ${feature("🛒", "Sales & Products", "Manage menu products.", "products")}
-            ${feature("🧾", "Purchases", "Create purchase orders.", "purchases")}
-            ${feature("🚚", "Suppliers", "Manage suppliers.", "suppliers")}
-            ${feature("◷", "Batch & Expiry", "Track expiration dates.", "batches")}
-            ${feature("📊", "Reports", "View business reports.", "reports")}
-            ${feature("🔔", "Notifications", "Check system alerts.", "notifications")}
-            ${feature("⚙", "Settings", "Manage account settings.", "settings")}
-
-        </div>
+            <button class="btn btn-primary" id="dashboardInventoryBtn" type="button">
+                View Inventory
+            </button>
+        </section>
     `;
+
+    document.getElementById("dashboardInventoryBtn")
+        ?.addEventListener("click", () => showPage("inventory"));
+
+    loadDashboardStats();
 }
 
-function feature(icon, title, description, page) {
-    return `
-        <button class="feature-card" data-go="${page}">
-            <div>${icon}</div>
-            <h3>${title}</h3>
-            <p>${description}</p>
-        </button>
-    `;
+async function loadDashboardStats() {
+    try {
+        const result = await apiRequest("/inventory");
+        const items = result.inventory || [];
+
+        const productsElement = document.getElementById("dashboardProducts");
+        const stockElement = document.getElementById("dashboardStock");
+        const lowStockElement = document.getElementById("dashboardLowStock");
+
+        if (productsElement) {
+            productsElement.textContent = items.length;
+        }
+
+        if (stockElement) {
+            stockElement.textContent = items.reduce(
+                (sum, item) => sum + Number(item.quantity || 0),
+                0
+            );
+        }
+
+        if (lowStockElement) {
+            lowStockElement.textContent = items.filter(item =>
+                Number(item.quantity || 0) <= Number(item.reorder_level || 0)
+            ).length;
+        }
+
+    } catch (error) {
+        console.error("Dashboard error:", error);
+    }
 }
 
+// ==============================
 // INVENTORY
+// ==============================
 
-function inventoryPage() {
-    return `
+async function renderInventory() {
+    pageContent.innerHTML = `
         <div class="toolbar">
-            <input type="text" id="searchInventory"
-                placeholder="Search ingredients...">
+            <div>
+                <h3>Inventory List</h3>
+                <p>View and manage your available stock.</p>
+            </div>
 
-            <button class="primary-btn" id="addInventory">
-                + Add Ingredient
+            <button class="btn btn-primary" id="addProductBtn" type="button">
+                + Add Product
             </button>
         </div>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Ingredient</th>
-                        <th>Category</th>
-                        <th>Quantity</th>
-                        <th>Minimum Stock</th>
-                        <th>Status</th>
-                        <th>Expiry Date</th>
-                    </tr>
-                </thead>
-
-                <tbody id="inventoryRows">
-                    ${inventoryRows(inventory)}
-                </tbody>
-            </table>
-        </div>
-    `;
-}
-
-function inventoryRows(items) {
-    return items.map(item => `
-        <tr>
-            <td>${escapeHTML(item.name)}</td>
-            <td>${escapeHTML(item.category)}</td>
-            <td>${item.qty} ${escapeHTML(item.unit)}</td>
-            <td>${item.minimum} ${escapeHTML(item.unit)}</td>
-            <td>
-                <span class="badge ${stockStatus(item)[1]}">
-                    ${stockStatus(item)[0]}
-                </span>
-            </td>
-            <td>${item.expiry}</td>
-        </tr>
-    `).join("") || `
-        <tr><td colspan="6">No ingredients found.</td></tr>
-    `;
-}
-
-// SALES AND PRODUCTS
-
-function productsPage() {
-    return `
-        <div class="panel">
-            <h3>Menu Products</h3>
-            <p>Available food products and their allergy information.</p>
-        </div>
-
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Product ID</th>
-                        <th>Product Name</th>
-                        <th>Price</th>
-                        <th>Allergy Information</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    ${products.map(product => `
+        <section class="panel">
+            <div class="table-wrap">
+                <table>
+                    <thead>
                         <tr>
-                            <td>${product.id}</td>
-                            <td>${product.name}</td>
-                            <td>${money(product.price)}</td>
-                            <td>${product.allergy}</td>
+                            <th>SKU</th>
+                            <th>Product Name</th>
+                            <th>Category</th>
+                            <th>Quantity</th>
+                            <th>Unit</th>
+                            <th>Cost Price</th>
+                            <th>Selling Price</th>
+                            <th>Status</th>
                         </tr>
-                    `).join("")}
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+
+                    <tbody id="inventoryTableBody">
+                        <tr><td colspan="8">Loading inventory...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
     `;
+
+    document.getElementById("addProductBtn")
+        ?.addEventListener("click", openAddProductModal);
+
+    await loadInventory();
 }
 
-// PURCHASES
+async function loadInventory() {
+    const tableBody = document.getElementById("inventoryTableBody");
+    if (!tableBody) return;
 
-function purchasesPage() {
-    return `
+    try {
+        const result = await apiRequest("/inventory");
+        inventoryData = result.inventory || [];
+
+        if (!inventoryData.length) {
+            tableBody.innerHTML = `
+                <tr><td colspan="8">No products yet. Click Add Product.</td></tr>
+            `;
+            return;
+        }
+
+        tableBody.innerHTML = inventoryData.map(item => {
+            const quantity = Number(item.quantity || 0);
+            const reorder = Number(item.reorder_level || 0);
+            const status = quantity <= reorder ? "Low Stock" : "In Stock";
+
+            return `
+                <tr>
+                    <td>${escapeHTML(item.sku)}</td>
+                    <td>${escapeHTML(item.product_name)}</td>
+                    <td>${escapeHTML(item.category || "Uncategorized")}</td>
+                    <td>${quantity}</td>
+                    <td>${escapeHTML(item.unit || "piece")}</td>
+                    <td>${formatCurrency(item.cost_price)}</td>
+                    <td>${formatCurrency(item.selling_price)}</td>
+                    <td><span class="badge">${status}</span></td>
+                </tr>
+            `;
+        }).join("");
+
+    } catch (error) {
+        tableBody.innerHTML = `
+            <tr><td colspan="8">${escapeHTML(error.message)}</td></tr>
+        `;
+    }
+}
+
+// ==============================
+// PRODUCT MODAL
+// ==============================
+
+function openProductModal(product = null) {
+    const editing = Boolean(product);
+
+    modalRoot.innerHTML = `
+        <div class="modal-backdrop" id="productModalBackdrop">
+            <div class="modal">
+                <div class="toolbar">
+                    <h3>${editing ? "Edit Product" : "Add New Product"}</h3>
+                    <button type="button" class="btn btn-secondary" id="closeProductModal">×</button>
+                </div>
+
+                <form id="productForm">
+                    <div class="form-grid">
+                        <div class="field">
+                            <label>SKU *</label>
+                            <input name="sku" maxlength="60" required
+                                value="${escapeHTML(product?.sku || "")}">
+                        </div>
+
+                        <div class="field">
+                            <label>Product Name *</label>
+                            <input name="product_name" maxlength="150" required
+                                value="${escapeHTML(product?.product_name || "")}">
+                        </div>
+
+                        <div class="field">
+                            <label>Category</label>
+                            <input name="category"
+                                value="${escapeHTML(product?.category || "")}">
+                        </div>
+
+                        <div class="field">
+                            <label>Unit</label>
+                            <input name="unit"
+                                value="${escapeHTML(product?.unit || "piece")}">
+                        </div>
+
+                        <div class="field">
+                            <label>Cost Price (₱)</label>
+                            <input name="cost_price" type="number" min="0" step="0.01"
+                                value="${Number(product?.cost_price || 0)}" required>
+                        </div>
+
+                        <div class="field">
+                            <label>Selling Price (₱)</label>
+                            <input name="selling_price" type="number" min="0" step="0.01"
+                                value="${Number(product?.selling_price || 0)}" required>
+                        </div>
+
+                        ${editing ? "" : `
+                            <div class="field">
+                                <label>Initial Quantity</label>
+                                <input name="quantity" type="number" min="0" step="1" value="0" required>
+                            </div>
+                        `}
+
+                        <div class="field">
+                            <label>Reorder Level</label>
+                            <input name="reorder_level" type="number" min="0" step="1"
+                                value="${Number(product?.reorder_level ?? 10)}" required>
+                        </div>
+
+                        <div class="field">
+                            <label>Description</label>
+                            <input name="description"
+                                value="${escapeHTML(product?.description || "")}">
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button type="button" class="btn btn-secondary" id="cancelProductBtn">
+                            Cancel
+                        </button>
+
+                        <button type="submit" class="btn btn-primary" id="saveProductBtn">
+                            ${editing ? "Update Product" : "Save Product"}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+
+    document.getElementById("closeProductModal")
+        ?.addEventListener("click", closeProductModal);
+
+    document.getElementById("cancelProductBtn")
+        ?.addEventListener("click", closeProductModal);
+
+    document.getElementById("productModalBackdrop")
+        ?.addEventListener("click", event => {
+            if (event.target.id === "productModalBackdrop") {
+                closeProductModal();
+            }
+        });
+
+    document.getElementById("productForm")
+        ?.addEventListener("submit", event => saveProduct(event, product));
+}
+
+function openAddProductModal() {
+    openProductModal();
+}
+
+async function saveProduct(event, existingProduct = null) {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+
+    const product = {
+        sku: String(formData.get("sku") || "").trim(),
+        product_name: String(formData.get("product_name") || "").trim(),
+        category: String(formData.get("category") || "").trim(),
+        unit: String(formData.get("unit") || "piece").trim() || "piece",
+        cost_price: Number(formData.get("cost_price")),
+        selling_price: Number(formData.get("selling_price")),
+        reorder_level: Number(formData.get("reorder_level")),
+        description: String(formData.get("description") || "").trim()
+    };
+
+    if (!existingProduct) {
+        product.quantity = Number(formData.get("quantity"));
+    }
+
+    const button = document.getElementById("saveProductBtn");
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = existingProduct ? "Updating..." : "Saving...";
+    }
+
+    try {
+        const endpoint = existingProduct
+            ? `/products/${existingProduct.product_id}`
+            : "/products";
+
+        const result = await apiRequest(endpoint, {
+            method: existingProduct ? "PUT" : "POST",
+            body: JSON.stringify(product)
+        });
+
+        closeProductModal();
+        showToast(result.message || "Product saved successfully!");
+
+        if (pageTitle?.textContent === "Products") {
+            await loadProducts();
+        } else {
+            await loadInventory();
+        }
+
+        loadDashboardStats();
+
+    } catch (error) {
+        showToast(error.message);
+
+        if (button) {
+            button.disabled = false;
+            button.textContent = existingProduct ? "Update Product" : "Save Product";
+        }
+    }
+}
+
+function closeProductModal() {
+    if (modalRoot) modalRoot.innerHTML = "";
+}
+
+// ==============================
+// PRODUCTS PAGE
+// ==============================
+
+async function renderProducts() {
+    productSearch = "";
+
+    pageContent.innerHTML = `
         <div class="toolbar">
-            <h3>Purchase Orders</h3>
-            <button class="primary-btn" id="newPurchase">
+            <div>
+                <h3>Product Management</h3>
+                <p>Add, search, edit, and manage your products.</p>
+            </div>
+
+            <button class="btn btn-primary" id="productsAddBtn" type="button">
+                + Add Product
+            </button>
+        </div>
+
+        <section class="panel">
+            <div class="toolbar">
+                <input type="search" id="productSearchInput"
+                    placeholder="Search by SKU, product name, or category...">
+                <span id="productCount">0 products</span>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>SKU</th>
+                            <th>Product Name</th>
+                            <th>Category</th>
+                            <th>Unit</th>
+                            <th>Cost Price</th>
+                            <th>Selling Price</th>
+                            <th>Reorder Level</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="productsTableBody">
+                        <tr><td colspan="8">Loading products...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    `;
+
+    document.getElementById("productsAddBtn")
+        ?.addEventListener("click", openAddProductModal);
+
+    document.getElementById("productSearchInput")
+        ?.addEventListener("input", event => {
+            productSearch = event.target.value.toLowerCase().trim();
+            displayProducts();
+        });
+
+    await loadProducts();
+}
+
+async function loadProducts() {
+    const tableBody = document.getElementById("productsTableBody");
+    if (!tableBody) return;
+
+    tableBody.innerHTML = `<tr><td colspan="8">Loading products...</td></tr>`;
+
+    try {
+        const result = await apiRequest("/products");
+        productsData = result.products || [];
+        displayProducts();
+
+    } catch (error) {
+        tableBody.innerHTML = `
+            <tr><td colspan="8">${escapeHTML(error.message)}</td></tr>
+        `;
+    }
+}
+
+function displayProducts() {
+    const tableBody = document.getElementById("productsTableBody");
+    const countElement = document.getElementById("productCount");
+
+    if (!tableBody) return;
+
+    const filteredProducts = productsData.filter(product => {
+        const searchableText = [
+            product.sku,
+            product.product_name,
+            product.category,
+            product.description
+        ].join(" ").toLowerCase();
+
+        return searchableText.includes(productSearch);
+    });
+
+    if (countElement) {
+        countElement.textContent =
+            `${filteredProducts.length} product${filteredProducts.length !== 1 ? "s" : ""}`;
+    }
+
+    if (!filteredProducts.length) {
+        tableBody.innerHTML = `<tr><td colspan="8">No matching products found.</td></tr>`;
+        return;
+    }
+
+    tableBody.innerHTML = filteredProducts.map(product => `
+        <tr>
+            <td>${escapeHTML(product.sku)}</td>
+            <td>${escapeHTML(product.product_name)}</td>
+            <td>${escapeHTML(product.category || "Uncategorized")}</td>
+            <td>${escapeHTML(product.unit || "piece")}</td>
+            <td>${formatCurrency(product.cost_price)}</td>
+            <td>${formatCurrency(product.selling_price)}</td>
+            <td>${Number(product.reorder_level || 0)}</td>
+            <td>
+                <button type="button" class="btn btn-secondary"
+                    data-edit-product="${Number(product.product_id)}">Edit</button>
+
+                <button type="button" class="btn btn-danger"
+                    data-delete-product="${Number(product.product_id)}">Delete</button>
+            </td>
+        </tr>
+    `).join("");
+
+    tableBody.querySelectorAll("[data-edit-product]").forEach(button => {
+        button.addEventListener("click", () => {
+            const product = productsData.find(
+                item => Number(item.product_id) === Number(button.dataset.editProduct)
+            );
+
+            if (product) openProductModal(product);
+        });
+    });
+
+    tableBody.querySelectorAll("[data-delete-product]").forEach(button => {
+        button.addEventListener("click", () => {
+            deleteProduct(Number(button.dataset.deleteProduct));
+        });
+    });
+}
+
+async function deleteProduct(id) {
+    const product = productsData.find(item => Number(item.product_id) === id);
+    if (!product) return;
+
+    if (!confirm(`Are you sure you want to delete "${product.product_name}"?`)) {
+        return;
+    }
+
+    try {
+        const result = await apiRequest(`/products/${id}`, {
+            method: "DELETE"
+        });
+
+        showToast(result.message || "Product deleted successfully!");
+        await loadProducts();
+        loadDashboardStats();
+
+    } catch (error) {
+        showToast(error.message);
+    }
+}
+
+// ==============================
+// SALES PAGE
+// ==============================
+
+async function renderSales() {
+    salesCart = [];
+
+    pageContent.innerHTML = `
+        <div class="toolbar">
+            <div>
+                <h3>Sales Management</h3>
+                <p>Create transactions and view your sales history.</p>
+            </div>
+
+            <button class="btn btn-primary" id="refreshSalesBtn" type="button">
+                Refresh Sales
+            </button>
+        </div>
+
+        <section class="panel">
+            <h3>New Sale</h3>
+
+            <div class="form-grid">
+                <div class="field">
+                    <label for="saleProductSelect">Select Product</label>
+                    <select id="saleProductSelect">
+                        <option value="">Loading products...</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="saleQuantity">Quantity</label>
+                    <input id="saleQuantity" type="number" min="1" step="1" value="1">
+                </div>
+
+                <div class="field">
+                    <label>Available Stock</label>
+                    <input id="saleAvailableStock" type="text" value="—" readonly>
+                </div>
+
+                <div class="field">
+                    <label>Unit Price</label>
+                    <input id="saleUnitPrice" type="text" value="—" readonly>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-primary" id="addSaleItemBtn" type="button">
+                    + Add to Sale
+                </button>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Unit Price</th>
+                            <th>Quantity</th>
+                            <th>Subtotal</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="salesCartBody">
+                        <tr><td colspan="5">No items added.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="toolbar" style="margin-top:20px;">
+                <div class="field">
+                    <label for="salePaymentMethod">Payment Method</label>
+                    <select id="salePaymentMethod">
+                        <option value="Cash">Cash</option>
+                        <option value="Card">Card</option>
+                        <option value="E-Wallet">E-Wallet</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div>
+                    <p>Total Amount</p>
+                    <h2 id="salesCartTotal">₱0.00</h2>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-secondary" id="clearSaleBtn" type="button">
+                    Clear Sale
+                </button>
+
+                <button class="btn btn-primary" id="completeSaleBtn" type="button">
+                    Complete Sale
+                </button>
+            </div>
+        </section>
+
+        <section class="panel" style="margin-top:24px;">
+            <div class="toolbar">
+                <div>
+                    <h3>Sales History</h3>
+                    <p>Review completed and cancelled transactions.</p>
+                </div>
+
+                <span id="salesCount">0 sales</span>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Receipt Number</th>
+                            <th>Date</th>
+                            <th>Total Amount</th>
+                            <th>Payment</th>
+                            <th>Cashier</th>
+                            <th>Items</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="salesHistoryBody">
+                        <tr><td colspan="8">Loading sales...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    `;
+
+    document.getElementById("refreshSalesBtn")
+        ?.addEventListener("click", async () => {
+            await loadSalesProducts();
+            await loadSalesHistory();
+        });
+
+    document.getElementById("saleProductSelect")
+        ?.addEventListener("change", updateSelectedSaleProduct);
+
+    document.getElementById("addSaleItemBtn")
+        ?.addEventListener("click", addSaleItem);
+
+    document.getElementById("clearSaleBtn")
+        ?.addEventListener("click", clearSaleCart);
+
+    document.getElementById("completeSaleBtn")
+        ?.addEventListener("click", completeSale);
+
+    await loadSalesProducts();
+    await loadSalesHistory();
+}
+
+async function loadSalesProducts() {
+    const select = document.getElementById("saleProductSelect");
+    if (!select) return;
+
+    try {
+        const result = await apiRequest("/products");
+        productsData = result.products || [];
+
+        const availableProducts = productsData.filter(product =>
+            Number(product.quantity || 0) > 0
+        );
+
+        if (!availableProducts.length) {
+            select.innerHTML = `<option value="">No products with available stock</option>`;
+            updateSelectedSaleProduct();
+            return;
+        }
+
+        select.innerHTML = `
+            <option value="">Choose a product...</option>
+            ${availableProducts.map(product => `
+                <option value="${Number(product.product_id)}">
+                    ${escapeHTML(product.product_name)} (${escapeHTML(product.sku)})
+                </option>
+            `).join("")}
+        `;
+
+        updateSelectedSaleProduct();
+
+    } catch (error) {
+        select.innerHTML = `<option value="">Unable to load products</option>`;
+        showToast(error.message);
+    }
+}
+
+function updateSelectedSaleProduct() {
+    const select = document.getElementById("saleProductSelect");
+    const stockInput = document.getElementById("saleAvailableStock");
+    const priceInput = document.getElementById("saleUnitPrice");
+
+    if (!select || !stockInput || !priceInput) return;
+
+    const product = productsData.find(
+        item => Number(item.product_id) === Number(select.value)
+    );
+
+    if (!product) {
+        stockInput.value = "—";
+        priceInput.value = "—";
+        return;
+    }
+
+    stockInput.value = Number(product.quantity || 0);
+    priceInput.value = formatCurrency(product.selling_price);
+}
+
+function addSaleItem() {
+    const productId = Number(document.getElementById("saleProductSelect")?.value);
+    const quantity = Number(document.getElementById("saleQuantity")?.value);
+
+    if (!productId) {
+        showToast("Please select a product.");
+        return;
+    }
+
+    if (!Number.isInteger(quantity) || quantity < 1) {
+        showToast("Please enter a valid quantity.");
+        return;
+    }
+
+    const product = productsData.find(
+        item => Number(item.product_id) === productId
+    );
+
+    if (!product) {
+        showToast("Product not found.");
+        return;
+    }
+
+    const availableStock = Number(product.quantity || 0);
+
+    const existingItem = salesCart.find(
+        item => Number(item.product_id) === productId
+    );
+
+    const currentCartQuantity = existingItem ? existingItem.quantity : 0;
+
+    if (currentCartQuantity + quantity > availableStock) {
+        showToast(`Only ${availableStock} unit(s) available in stock.`);
+        return;
+    }
+
+    if (existingItem) {
+        existingItem.quantity += quantity;
+    } else {
+        salesCart.push({
+            product_id: productId,
+            product_name: product.product_name,
+            sku: product.sku,
+            unit_price: Number(product.selling_price || 0),
+            quantity
+        });
+    }
+
+    renderSalesCart();
+
+    document.getElementById("saleQuantity").value = 1;
+    showToast("Product added to sale.");
+}
+
+function renderSalesCart() {
+    const tableBody = document.getElementById("salesCartBody");
+    const totalElement = document.getElementById("salesCartTotal");
+
+    if (!tableBody || !totalElement) return;
+
+    if (!salesCart.length) {
+        tableBody.innerHTML = `<tr><td colspan="5">No items added.</td></tr>`;
+        totalElement.textContent = "₱0.00";
+        return;
+    }
+
+    tableBody.innerHTML = salesCart.map((item, index) => `
+        <tr>
+            <td>
+                ${escapeHTML(item.product_name)}
+                <br><small>${escapeHTML(item.sku)}</small>
+            </td>
+
+            <td>${formatCurrency(item.unit_price)}</td>
+            <td>${item.quantity}</td>
+            <td>${formatCurrency(item.unit_price * item.quantity)}</td>
+
+            <td>
+                <button type="button" class="btn btn-danger"
+                    data-remove-sale-item="${index}">Remove</button>
+            </td>
+        </tr>
+    `).join("");
+
+    const total = salesCart.reduce(
+        (sum, item) => sum + item.unit_price * item.quantity,
+        0
+    );
+
+    totalElement.textContent = formatCurrency(total);
+
+    tableBody.querySelectorAll("[data-remove-sale-item]").forEach(button => {
+        button.addEventListener("click", () => {
+            salesCart.splice(Number(button.dataset.removeSaleItem), 1);
+            renderSalesCart();
+        });
+    });
+}
+
+function clearSaleCart() {
+    salesCart = [];
+    renderSalesCart();
+    showToast("Sale cleared.");
+}
+
+async function completeSale() {
+    if (!salesCart.length) {
+        showToast("Please add at least one product.");
+        return;
+    }
+
+    const paymentMethod =
+        document.getElementById("salePaymentMethod")?.value || "Cash";
+
+    const total = salesCart.reduce(
+        (sum, item) => sum + item.unit_price * item.quantity,
+        0
+    );
+
+    if (!confirm(
+        `Complete this sale?\n\nTotal: ${formatCurrency(total)}\nPayment: ${paymentMethod}`
+    )) {
+        return;
+    }
+
+    const button = document.getElementById("completeSaleBtn");
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Processing...";
+    }
+
+    try {
+        const saleData = {
+            items: salesCart.map(item => ({
+                product_id: item.product_id,
+                quantity: item.quantity
+            })),
+            payment_method: paymentMethod,
+            created_by: getCurrentUserId()
+        };
+
+        const result = await apiRequest("/sales", {
+            method: "POST",
+            body: JSON.stringify(saleData)
+        });
+
+        salesCart = [];
+        renderSalesCart();
+
+        showToast(result.message || "Sale completed successfully!");
+
+        await loadSalesProducts();
+        await loadSalesHistory();
+        loadDashboardStats();
+
+        if (pageTitle?.textContent === "Inventory") {
+            await loadInventory();
+        }
+
+    } catch (error) {
+        showToast(error.message);
+        await loadSalesProducts();
+
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = "Complete Sale";
+        }
+    }
+}
+
+async function loadSalesHistory() {
+    const tableBody = document.getElementById("salesHistoryBody");
+    if (!tableBody) return;
+
+    tableBody.innerHTML = `<tr><td colspan="8">Loading sales...</td></tr>`;
+
+    try {
+        const result = await apiRequest("/sales");
+        salesData = result.sales || [];
+        displaySalesHistory();
+
+    } catch (error) {
+        tableBody.innerHTML = `
+            <tr><td colspan="8">${escapeHTML(error.message)}</td></tr>
+        `;
+    }
+}
+
+function displaySalesHistory() {
+    const tableBody = document.getElementById("salesHistoryBody");
+    const countElement = document.getElementById("salesCount");
+
+    if (!tableBody) return;
+
+    if (countElement) {
+        countElement.textContent =
+            `${salesData.length} sale${salesData.length !== 1 ? "s" : ""}`;
+    }
+
+    if (!salesData.length) {
+        tableBody.innerHTML = `<tr><td colspan="8">No sales recorded yet.</td></tr>`;
+        return;
+    }
+
+    tableBody.innerHTML = salesData.map(sale => {
+        const status = sale.status || "Completed";
+        const cancelled = status === "Cancelled";
+
+        return `
+            <tr>
+                <td>${escapeHTML(sale.receipt_number || "—")}</td>
+                <td>${escapeHTML(formatDate(sale.sale_date))}</td>
+                <td>${formatCurrency(sale.total_amount)}</td>
+                <td>${escapeHTML(sale.payment_method || "—")}</td>
+                <td>${escapeHTML(sale.cashier || sale.created_by_name || "—")}</td>
+                <td>${Number(sale.item_count || 0)}</td>
+                <td><span class="badge">${escapeHTML(status)}</span></td>
+
+                <td>
+                    <button type="button" class="btn btn-secondary"
+                        data-view-sale="${Number(sale.sale_id)}">View</button>
+
+                    ${cancelled ? "" : `
+                        <button type="button" class="btn btn-danger"
+                            data-cancel-sale="${Number(sale.sale_id)}">Cancel</button>
+                    `}
+                </td>
+            </tr>
+        `;
+    }).join("");
+
+    tableBody.querySelectorAll("[data-view-sale]").forEach(button => {
+        button.addEventListener("click", () => {
+            viewSale(Number(button.dataset.viewSale));
+        });
+    });
+
+    tableBody.querySelectorAll("[data-cancel-sale]").forEach(button => {
+        button.addEventListener("click", () => {
+            cancelSale(Number(button.dataset.cancelSale));
+        });
+    });
+}
+
+async function viewSale(id) {
+    try {
+        const result = await apiRequest(`/sales/${id}`);
+        const sale = result.sale || result;
+        const items = sale.items || sale.sale_items || [];
+
+        const itemRows = items.map(item => `
+            <tr>
+                <td>${escapeHTML(item.product_name || "Product")}</td>
+                <td>${Number(item.quantity || 0)}</td>
+                <td>${formatCurrency(item.unit_price)}</td>
+                <td>${formatCurrency(item.subtotal)}</td>
+            </tr>
+        `).join("");
+
+        modalRoot.innerHTML = `
+            <div class="modal-backdrop" id="receiptModalBackdrop">
+                <div class="modal">
+                    <div class="toolbar">
+                        <h3>Sales Receipt</h3>
+                        <button type="button" class="btn btn-secondary"
+                            id="closeReceiptBtn">×</button>
+                    </div>
+
+                    <div id="receiptContent">
+                        <h3>StockSense</h3>
+
+                        <p><strong>Receipt:</strong>
+                            ${escapeHTML(sale.receipt_number || "—")}</p>
+
+                        <p><strong>Date:</strong>
+                            ${escapeHTML(formatDate(sale.sale_date))}</p>
+
+                        <p><strong>Payment:</strong>
+                            ${escapeHTML(sale.payment_method || "—")}</p>
+
+                        <p><strong>Status:</strong>
+                            ${escapeHTML(sale.status || "Completed")}</p>
+
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Qty</th>
+                                        <th>Price</th>
+                                        <th>Subtotal</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    ${itemRows || `<tr><td colspan="4">No items found.</td></tr>`}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3 style="text-align:right;">
+                            Total: ${formatCurrency(sale.total_amount)}
+                        </h3>
+                    </div>
+
+                    <div class="actions">
+                        <button type="button" class="btn btn-secondary"
+                            id="printReceiptBtn">Print Receipt</button>
+
+                        <button type="button" class="btn btn-primary"
+                            id="closeReceiptFooterBtn">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById("closeReceiptBtn")
+            ?.addEventListener("click", closeSalesModal);
+
+        document.getElementById("closeReceiptFooterBtn")
+            ?.addEventListener("click", closeSalesModal);
+
+        document.getElementById("receiptModalBackdrop")
+            ?.addEventListener("click", event => {
+                if (event.target.id === "receiptModalBackdrop") {
+                    closeSalesModal();
+                }
+            });
+
+        document.getElementById("printReceiptBtn")
+            ?.addEventListener("click", () => {
+                const content = document.getElementById("receiptContent");
+                if (!content) return;
+
+                const printWindow = window.open("", "_blank");
+
+                if (!printWindow) {
+                    showToast("Please allow pop-ups to print the receipt.");
+                    return;
+                }
+
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>StockSense Receipt</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; padding: 25px; }
+                            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                            th, td { border-bottom: 1px solid #ddd; padding: 10px; text-align: left; }
+                        </style>
+                    </head>
+                    <body>${content.innerHTML}</body>
+                    </html>
+                `);
+
+                printWindow.document.close();
+                printWindow.focus();
+                printWindow.print();
+            });
+
+    } catch (error) {
+        showToast(error.message);
+    }
+}
+
+function closeSalesModal() {
+    if (modalRoot) modalRoot.innerHTML = "";
+}
+
+async function cancelSale(id) {
+    const sale = salesData.find(item => Number(item.sale_id) === id);
+    if (!sale) return;
+
+    if (!confirm(
+        `Are you sure you want to cancel receipt ${sale.receipt_number}?\n\nThe sold quantities will be returned to inventory.`
+    )) {
+        return;
+    }
+
+    try {
+        const result = await apiRequest(`/sales/${id}/cancel`, {
+            method: "PUT"
+        });
+
+        showToast(result.message || "Sale cancelled successfully!");
+
+        await loadSalesHistory();
+        await loadSalesProducts();
+        loadDashboardStats();
+
+    } catch (error) {
+        showToast(error.message);
+    }
+}
+
+// ==============================
+// SUPPLIERS PAGE
+// ==============================
+
+async function renderSuppliers() {
+    supplierSearch = "";
+
+    pageContent.innerHTML = `
+        <div class="toolbar">
+            <div>
+                <h3>Supplier Management</h3>
+                <p>Manage your supplier information and contact details.</p>
+            </div>
+
+            <button class="btn btn-primary" id="addSupplierBtn" type="button">
+                + Add Supplier
+            </button>
+        </div>
+
+        <section class="panel">
+            <div class="toolbar">
+                <input type="search" id="supplierSearchInput"
+                    placeholder="Search supplier name, contact, email, or phone...">
+
+                <span id="supplierCount">0 suppliers</span>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Supplier Name</th>
+                            <th>Contact Person</th>
+                            <th>Phone</th>
+                            <th>Email</th>
+                            <th>Address</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="suppliersTableBody">
+                        <tr><td colspan="7">Loading suppliers...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    `;
+
+    document.getElementById("addSupplierBtn")
+        ?.addEventListener("click", () => openSupplierModal());
+
+    document.getElementById("supplierSearchInput")
+        ?.addEventListener("input", event => {
+            supplierSearch = event.target.value.toLowerCase().trim();
+            displaySuppliers();
+        });
+
+    await loadSuppliers();
+}
+
+async function loadSuppliers() {
+    const tableBody = document.getElementById("suppliersTableBody");
+    if (!tableBody) return;
+
+    tableBody.innerHTML = `<tr><td colspan="7">Loading suppliers...</td></tr>`;
+
+    try {
+        const result = await apiRequest("/suppliers");
+        suppliersData = result.suppliers || [];
+        displaySuppliers();
+
+    } catch (error) {
+        tableBody.innerHTML = `
+            <tr><td colspan="7">${escapeHTML(error.message)}</td></tr>
+        `;
+    }
+}
+
+function displaySuppliers() {
+    const tableBody = document.getElementById("suppliersTableBody");
+    const countElement = document.getElementById("supplierCount");
+
+    if (!tableBody) return;
+
+    const filteredSuppliers = suppliersData.filter(supplier => {
+        const searchableText = [
+            supplier.supplier_name,
+            supplier.contact_person,
+            supplier.phone,
+            supplier.email,
+            supplier.address,
+            supplier.status
+        ].join(" ").toLowerCase();
+
+        return searchableText.includes(supplierSearch);
+    });
+
+    if (countElement) {
+        countElement.textContent =
+            `${filteredSuppliers.length} supplier${filteredSuppliers.length !== 1 ? "s" : ""}`;
+    }
+
+    if (!filteredSuppliers.length) {
+        tableBody.innerHTML = `
+            <tr><td colspan="7">No suppliers found. Click Add Supplier.</td></tr>
+        `;
+        return;
+    }
+
+    tableBody.innerHTML = filteredSuppliers.map(supplier => {
+        const status = supplier.status || "Active";
+        const isActive = status === "Active";
+
+        return `
+            <tr>
+                <td>${escapeHTML(supplier.supplier_name)}</td>
+                <td>${escapeHTML(supplier.contact_person || "—")}</td>
+                <td>${escapeHTML(supplier.phone || "—")}</td>
+                <td>${escapeHTML(supplier.email || "—")}</td>
+                <td>${escapeHTML(supplier.address || "—")}</td>
+                <td><span class="badge">${escapeHTML(status)}</span></td>
+
+                <td>
+                    <button type="button" class="btn btn-secondary"
+                        data-edit-supplier="${Number(supplier.supplier_id)}">Edit</button>
+
+                    ${isActive ? `
+                        <button type="button" class="btn btn-danger"
+                            data-deactivate-supplier="${Number(supplier.supplier_id)}">
+                            Deactivate
+                        </button>
+                    ` : ""}
+                </td>
+            </tr>
+        `;
+    }).join("");
+
+    tableBody.querySelectorAll("[data-edit-supplier]").forEach(button => {
+        button.addEventListener("click", () => {
+            const supplier = suppliersData.find(
+                item => Number(item.supplier_id) === Number(button.dataset.editSupplier)
+            );
+
+            if (supplier) openSupplierModal(supplier);
+        });
+    });
+
+    tableBody.querySelectorAll("[data-deactivate-supplier]").forEach(button => {
+        button.addEventListener("click", () => {
+            deactivateSupplier(Number(button.dataset.deactivateSupplier));
+        });
+    });
+}
+
+function openSupplierModal(supplier = null) {
+    const editing = Boolean(supplier);
+
+    if (!modalRoot) {
+        showToast("Modal container was not found.");
+        return;
+    }
+
+    modalRoot.innerHTML = `
+        <div class="modal-backdrop" id="supplierModalBackdrop">
+            <div class="modal">
+                <div class="toolbar">
+                    <h3>${editing ? "Edit Supplier" : "Add New Supplier"}</h3>
+
+                    <button type="button" class="btn btn-secondary"
+                        id="closeSupplierModal">×</button>
+                </div>
+
+                <form id="supplierForm">
+                    <div class="form-grid">
+                        <div class="field">
+                            <label>Supplier Name *</label>
+                            <input name="supplier_name" maxlength="150" required
+                                value="${escapeHTML(supplier?.supplier_name || "")}">
+                        </div>
+
+                        <div class="field">
+                            <label>Contact Person</label>
+                            <input name="contact_person" maxlength="120"
+                                value="${escapeHTML(supplier?.contact_person || "")}">
+                        </div>
+
+                        <div class="field">
+                            <label>Phone Number</label>
+                            <input name="phone" maxlength="30"
+                                value="${escapeHTML(supplier?.phone || "")}">
+                        </div>
+
+                        <div class="field">
+                            <label>Email Address</label>
+                            <input name="email" type="email" maxlength="150"
+                                value="${escapeHTML(supplier?.email || "")}">
+                        </div>
+
+                        <div class="field">
+                            <label>Address</label>
+                            <input name="address"
+                                value="${escapeHTML(supplier?.address || "")}">
+                        </div>
+
+                        <div class="field">
+                            <label>Status</label>
+                            <select name="status">
+                                <option value="Active"
+                                    ${supplier?.status !== "Inactive" ? "selected" : ""}>
+                                    Active
+                                </option>
+
+                                <option value="Inactive"
+                                    ${supplier?.status === "Inactive" ? "selected" : ""}>
+                                    Inactive
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button type="button" class="btn btn-secondary"
+                            id="cancelSupplierBtn">Cancel</button>
+
+                        <button type="submit" class="btn btn-primary"
+                            id="saveSupplierBtn">
+                            ${editing ? "Update Supplier" : "Save Supplier"}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+
+    document.getElementById("closeSupplierModal")
+        ?.addEventListener("click", closeSupplierModal);
+
+    document.getElementById("cancelSupplierBtn")
+        ?.addEventListener("click", closeSupplierModal);
+
+    document.getElementById("supplierModalBackdrop")
+        ?.addEventListener("click", event => {
+            if (event.target.id === "supplierModalBackdrop") {
+                closeSupplierModal();
+            }
+        });
+
+    document.getElementById("supplierForm")
+        ?.addEventListener("submit", event => saveSupplier(event, supplier));
+}
+
+async function saveSupplier(event, existingSupplier = null) {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+
+    const supplier = {
+        supplier_name: String(formData.get("supplier_name") || "").trim(),
+        contact_person: String(formData.get("contact_person") || "").trim(),
+        phone: String(formData.get("phone") || "").trim(),
+        email: String(formData.get("email") || "").trim(),
+        address: String(formData.get("address") || "").trim(),
+        status: String(formData.get("status") || "Active")
+    };
+
+    if (!supplier.supplier_name) {
+        showToast("Supplier name is required.");
+        return;
+    }
+
+    const button = document.getElementById("saveSupplierBtn");
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = existingSupplier ? "Updating..." : "Saving...";
+    }
+
+    try {
+        const endpoint = existingSupplier
+            ? `/suppliers/${existingSupplier.supplier_id}`
+            : "/suppliers";
+
+        const result = await apiRequest(endpoint, {
+            method: existingSupplier ? "PUT" : "POST",
+            body: JSON.stringify(supplier)
+        });
+
+        closeSupplierModal();
+
+        showToast(result.message || "Supplier saved successfully!");
+        await loadSuppliers();
+
+    } catch (error) {
+        showToast(error.message);
+
+        if (button) {
+            button.disabled = false;
+            button.textContent = existingSupplier ? "Update Supplier" : "Save Supplier";
+        }
+    }
+}
+
+async function deactivateSupplier(id) {
+    const supplier = suppliersData.find(
+        item => Number(item.supplier_id) === id
+    );
+
+    if (!supplier) return;
+
+    if (!confirm(`Are you sure you want to deactivate "${supplier.supplier_name}"?`)) {
+        return;
+    }
+
+    try {
+        const result = await apiRequest(`/suppliers/${id}`, {
+            method: "DELETE"
+        });
+
+        showToast(result.message || "Supplier deactivated successfully!");
+        await loadSuppliers();
+
+    } catch (error) {
+        showToast(error.message);
+    }
+}
+
+function closeSupplierModal() {
+    if (modalRoot) modalRoot.innerHTML = "";
+}
+
+// ==============================
+// PURCHASES PAGE
+// ==============================
+
+async function renderPurchases() {
+    purchaseItems = [];
+
+    pageContent.innerHTML = `
+        <div class="toolbar">
+            <div>
+                <h3>Purchase Management</h3>
+                <p>Record purchases from suppliers and receive stock into inventory.</p>
+            </div>
+
+            <button class="btn btn-primary" id="newPurchaseBtn" type="button">
                 + New Purchase
             </button>
         </div>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Order ID</th>
-                        <th>Supplier</th>
-                        <th>Date</th>
-                        <th>Items</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
+        <section class="panel">
+            <div class="toolbar">
+                <div>
+                    <h3>Purchase History</h3>
+                    <p>View pending, received, and cancelled purchases.</p>
+                </div>
 
-                <tbody>
-                    ${purchases.map(p => `
+                <button class="btn btn-secondary" id="refreshPurchasesBtn" type="button">
+                    Refresh
+                </button>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
                         <tr>
-                            <td>${p.id}</td>
-                            <td>${p.supplier}</td>
-                            <td>${p.date}</td>
-                            <td>${p.items}</td>
-                            <td>
-                                <span class="badge ${p.status === "Pending" ? "warning" : ""}">
-                                    ${p.status}
-                                </span>
-                            </td>
+                            <th>Reference Number</th>
+                            <th>Supplier</th>
+                            <th>Purchase Date</th>
+                            <th>Total Amount</th>
+                            <th>Status</th>
+                            <th>Actions</th>
                         </tr>
-                    `).join("")}
-                </tbody>
-            </table>
-        </div>
-    `;
-}
+                    </thead>
 
-// SUPPLIERS
-
-function suppliersPage() {
-    return `
-        <h3 class="section-title">Supplier Directory</h3>
-
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Supplier ID</th>
-                        <th>Supplier Name</th>
-                        <th>Contact</th>
-                        <th>Supplied Items</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    ${suppliers.map(s => `
-                        <tr>
-                            <td>${s.id}</td>
-                            <td>${s.name}</td>
-                            <td>${s.contact}</td>
-                            <td>${s.items}</td>
-                        </tr>
-                    `).join("")}
-                </tbody>
-            </table>
-        </div>
-    `;
-}
-
-// BATCH AND EXPIRY
-
-function batchesPage() {
-    return `
-        <h3 class="section-title">Batch and Expiry Monitoring</h3>
-
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Batch ID</th>
-                        <th>Ingredient</th>
-                        <th>Quantity</th>
-                        <th>Expiry Date</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    ${inventory.map((item, index) => `
-                        <tr>
-                            <td>BAT-${1001 + index}</td>
-                            <td>${escapeHTML(item.name)}</td>
-                            <td>${item.qty} ${escapeHTML(item.unit)}</td>
-                            <td>${item.expiry}</td>
-                        </tr>
-                    `).join("")}
-                </tbody>
-            </table>
-        </div>
-    `;
-}
-
-// REPORTS
-
-function reportsPage() {
-    return `
-        <div class="stats-grid">
-
-            <div class="stat-card">
-                <p>Today's Sales</p>
-                <h2>${money(8450)}</h2>
+                    <tbody id="purchasesTableBody">
+                        <tr><td colspan="6">Loading purchases...</td></tr>
+                    </tbody>
+                </table>
             </div>
-
-            <div class="stat-card">
-                <p>Orders</p>
-                <h2>12</h2>
-            </div>
-
-            <div class="stat-card">
-                <p>Inventory Items</p>
-                <h2>${inventory.length}</h2>
-            </div>
-
-            <div class="stat-card">
-                <p>Low Stock</p>
-                <h2>${inventory.filter(i => i.qty <= i.minimum).length}</h2>
-            </div>
-
-        </div>
-
-        <div class="panel">
-            <h3>Business Reports</h3>
-            <p>Download your current inventory report.</p>
-            <br>
-            <button class="primary-btn" id="exportCSV">
-                Download Inventory CSV
-            </button>
-        </div>
+        </section>
     `;
+
+    document.getElementById("newPurchaseBtn")
+        ?.addEventListener("click", openPurchaseModal);
+
+    document.getElementById("refreshPurchasesBtn")
+        ?.addEventListener("click", loadPurchases);
+
+    await loadPurchases();
 }
 
-// NOTIFICATIONS
+async function loadPurchases() {
+    const tableBody = document.getElementById("purchasesTableBody");
+    if (!tableBody) return;
 
-function notificationsPage() {
-    return `
-        <h3 class="section-title">System Notifications</h3>
-
-        <div class="alert">
-            <strong>⚠ Low Stock Alert</strong>
-            Fresh milk needs restocking.
-        </div>
-
-        <div class="alert">
-            <strong>◷ Expiry Alert</strong>
-            Lettuce is nearing its expiry date.
-        </div>
-
-        <div class="alert">
-            <strong>📦 Purchase Notification</strong>
-            Purchase order PO-002 is pending.
-        </div>
+    tableBody.innerHTML = `
+        <tr><td colspan="6">Loading purchases...</td></tr>
     `;
+
+    try {
+        const result = await apiRequest("/purchases");
+        purchasesData = result.purchases || [];
+        displayPurchases();
+
+    } catch (error) {
+        tableBody.innerHTML = `
+            <tr><td colspan="6">${escapeHTML(error.message)}</td></tr>
+        `;
+    }
 }
 
-// SETTINGS
+function displayPurchases() {
+    const tableBody = document.getElementById("purchasesTableBody");
+    if (!tableBody) return;
 
-function settingsPage() {
-    return `
-        <div class="panel">
-            <h3>Account Settings</h3>
+    if (!purchasesData.length) {
+        tableBody.innerHTML = `
+            <tr><td colspan="6">No purchases recorded yet. Click New Purchase.</td></tr>
+        `;
+        return;
+    }
 
-            <p>Account Name: ${escapeHTML(currentUser.name)}</p>
-            <br>
-            <p>Account Role: ${escapeHTML(currentUser.role)}</p>
-            <br>
-            <p>System: StockSense</p>
-            <br>
-            <p>Shop: Main Food Shop</p>
-        </div>
-    `;
-}
+    tableBody.innerHTML = purchasesData.map(purchase => {
+        const status = purchase.status || "Pending";
 
-// PAGE EVENTS
+        return `
+            <tr>
+                <td>${escapeHTML(purchase.reference_number || `PUR-${purchase.purchase_id}`)}</td>
+                <td>${escapeHTML(purchase.supplier_name || "No supplier")}</td>
+                <td>${escapeHTML(formatDate(purchase.purchase_date))}</td>
+                <td>${formatCurrency(purchase.total_amount)}</td>
+                <td><span class="badge">${escapeHTML(status)}</span></td>
 
-function attachEvents(page) {
+                <td>
+                    <button type="button" class="btn btn-secondary"
+                        data-view-purchase="${Number(purchase.purchase_id)}">
+                        View
+                    </button>
 
-    // Navigation from dashboard feature cards
-    document.querySelectorAll("[data-go]").forEach(button => {
+                    ${status === "Pending" ? `
+                        <button type="button" class="btn btn-primary"
+                            data-receive-purchase="${Number(purchase.purchase_id)}">
+                            Receive
+                        </button>
+
+                        <button type="button" class="btn btn-danger"
+                            data-cancel-purchase="${Number(purchase.purchase_id)}">
+                            Cancel
+                        </button>
+                    ` : ""}
+                </td>
+            </tr>
+        `;
+    }).join("");
+
+    tableBody.querySelectorAll("[data-view-purchase]").forEach(button => {
         button.addEventListener("click", () => {
-            showPage(button.dataset.go);
+            viewPurchase(Number(button.dataset.viewPurchase));
         });
     });
 
-    // Search Inventory
-    if (page === "inventory") {
-
-        document.getElementById("searchInventory")
-            .addEventListener("input", function() {
-
-                const search = this.value.toLowerCase();
-
-                const filtered = inventory.filter(item =>
-                    item.name.toLowerCase().includes(search) ||
-                    item.category.toLowerCase().includes(search)
-                );
-
-                document.getElementById("inventoryRows").innerHTML =
-                    inventoryRows(filtered);
-            });
-
-        // Add Ingredient
-        document.getElementById("addInventory")
-            .addEventListener("click", function() {
-
-                const name = prompt("Enter ingredient name:");
-
-                if (!name || !name.trim()) return;
-
-                const qty = Number(prompt("Enter quantity:", "1"));
-
-                if (!Number.isFinite(qty) || qty < 0) {
-                    showToast("Invalid quantity.");
-                    return;
-                }
-
-                const unit = prompt("Enter unit (kg, L, pcs):", "kg");
-
-                if (!unit) return;
-
-                inventory.push({
-                    id: Date.now(),
-                    name: name.trim(),
-                    category: "Other",
-                    qty: qty,
-                    unit: unit,
-                    minimum: 2,
-                    expiry: "2027-01-01"
-                });
-
-                localStorage.setItem(
-                    "stocksense_inventory",
-                    JSON.stringify(inventory)
-                );
-
-                showPage("inventory");
-                showToast("Ingredient added successfully!");
-            });
-    }
-
-    // New Purchase
-    if (page === "purchases") {
-        document.getElementById("newPurchase")
-            .addEventListener("click", function() {
-                showToast("Purchase order feature is a prototype.");
-            });
-    }
-
-    // Export CSV
-    if (page === "reports") {
-        document.getElementById("exportCSV")
-            .addEventListener("click", exportCSV);
-    }
-}
-
-// EXPORT INVENTORY REPORT
-
-function exportCSV() {
-
-    const header = [
-        "Ingredient",
-        "Category",
-        "Quantity",
-        "Unit",
-        "Minimum Stock",
-        "Expiry"
-    ];
-
-    const rows = inventory.map(item => [
-        item.name,
-        item.category,
-        item.qty,
-        item.unit,
-        item.minimum,
-        item.expiry
-    ]);
-
-    const csv = [header, ...rows]
-        .map(row => row.map(value =>
-            `"${String(value).replace(/"/g, '""')}"`
-        ).join(","))
-        .join("\n");
-
-    const blob = new Blob([csv], {
-        type: "text/csv;charset=utf-8;"
+    tableBody.querySelectorAll("[data-receive-purchase]").forEach(button => {
+        button.addEventListener("click", () => {
+            receivePurchase(Number(button.dataset.receivePurchase));
+        });
     });
 
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "StockSense_Inventory_Report.csv";
-    link.click();
-
-    URL.revokeObjectURL(url);
-
-    showToast("Inventory report downloaded!");
+    tableBody.querySelectorAll("[data-cancel-purchase]").forEach(button => {
+        button.addEventListener("click", () => {
+            cancelPurchase(Number(button.dataset.cancelPurchase));
+        });
+    });
 }
 
-// RESTORE SAVED INVENTORY
+// ==============================
+// CREATE PURCHASE MODAL
+// ==============================
 
-const savedInventory = getStoredValue("stocksense_inventory", null);
+async function openPurchaseModal() {
+    purchaseItems = [];
 
-if (savedInventory) {
-    if (Array.isArray(savedInventory)) {
-        inventory = savedInventory;
-    } else {
-        console.error("Saved inventory is not a valid array.");
+    try {
+        const [productsResult, suppliersResult] = await Promise.all([
+            apiRequest("/products"),
+            apiRequest("/suppliers")
+        ]);
+
+        productsData = productsResult.products || [];
+        suppliersData = suppliersResult.suppliers || [];
+
+        const activeSuppliers = suppliersData.filter(
+            supplier => supplier.status !== "Inactive"
+        );
+
+        if (!productsData.length) {
+            showToast("Add products first before creating a purchase.");
+            return;
+        }
+
+        if (!activeSuppliers.length) {
+            showToast("Add an active supplier first before creating a purchase.");
+            return;
+        }
+
+        modalRoot.innerHTML = `
+            <div class="modal-backdrop" id="purchaseModalBackdrop">
+                <div class="modal">
+                    <div class="toolbar">
+                        <h3>New Purchase</h3>
+
+                        <button type="button" class="btn btn-secondary"
+                            id="closePurchaseModal">×</button>
+                    </div>
+
+                    <form id="purchaseForm">
+                        <div class="form-grid">
+                            <div class="field">
+                                <label>Supplier *</label>
+
+                                <select name="supplier_id" id="purchaseSupplier" required>
+                                    <option value="">Select supplier...</option>
+
+                                    ${activeSuppliers.map(supplier => `
+                                        <option value="${Number(supplier.supplier_id)}">
+                                            ${escapeHTML(supplier.supplier_name)}
+                                        </option>
+                                    `).join("")}
+                                </select>
+                            </div>
+
+                            <div class="field">
+                                <label>Reference Number</label>
+                                <input name="reference_number" maxlength="80"
+                                    placeholder="Optional reference number">
+                            </div>
+
+                            <div class="field">
+                                <label>Notes</label>
+                                <input name="notes" placeholder="Optional notes">
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <h4>Add Purchase Items</h4>
+
+                        <div class="form-grid">
+                            <div class="field">
+                                <label>Product *</label>
+
+                                <select id="purchaseProductSelect">
+                                    <option value="">Select product...</option>
+
+                                    ${productsData.map(product => `
+                                        <option value="${Number(product.product_id)}">
+                                            ${escapeHTML(product.product_name)}
+                                            (${escapeHTML(product.sku)})
+                                        </option>
+                                    `).join("")}
+                                </select>
+                            </div>
+
+                            <div class="field">
+                                <label>Quantity *</label>
+                                <input id="purchaseQuantity" type="number"
+                                    min="1" step="1" value="1">
+                            </div>
+
+                            <div class="field">
+                                <label>Unit Cost (₱) *</label>
+                                <input id="purchaseUnitCost" type="number"
+                                    min="0" step="0.01" value="0">
+                            </div>
+
+                            <div class="field">
+                                <label>Expiry Date</label>
+                                <input id="purchaseExpiryDate" type="date">
+                            </div>
+                        </div>
+
+                        <div class="actions">
+                            <button type="button" class="btn btn-secondary"
+                                id="addPurchaseItemBtn">+ Add Item</button>
+                        </div>
+
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Quantity</th>
+                                        <th>Unit Cost</th>
+                                        <th>Subtotal</th>
+                                        <th>Expiry Date</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody id="purchaseItemsBody">
+                                    <tr><td colspan="6">No items added.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div style="text-align:right; margin-top:16px;">
+                            <h3>Total: <span id="purchaseTotal">₱0.00</span></h3>
+                        </div>
+
+                        <div class="actions">
+                            <button type="button" class="btn btn-secondary"
+                                id="cancelPurchaseFormBtn">Close</button>
+
+                            <button type="submit" class="btn btn-primary"
+                                id="savePurchaseBtn">Save Purchase</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        document.getElementById("closePurchaseModal")
+            ?.addEventListener("click", closePurchaseModal);
+
+        document.getElementById("cancelPurchaseFormBtn")
+            ?.addEventListener("click", closePurchaseModal);
+
+        document.getElementById("purchaseModalBackdrop")
+            ?.addEventListener("click", event => {
+                if (event.target.id === "purchaseModalBackdrop") {
+                    closePurchaseModal();
+                }
+            });
+
+        document.getElementById("addPurchaseItemBtn")
+            ?.addEventListener("click", addPurchaseItem);
+
+        document.getElementById("purchaseForm")
+            ?.addEventListener("submit", savePurchase);
+
+    } catch (error) {
+        showToast(error.message);
     }
 }
 
-// START APPLICATION
+function addPurchaseItem() {
+    const productId = Number(
+        document.getElementById("purchaseProductSelect")?.value
+    );
 
-if (currentUser) {
+    const quantity = Number(
+        document.getElementById("purchaseQuantity")?.value
+    );
+
+    const unitCost = Number(
+        document.getElementById("purchaseUnitCost")?.value
+    );
+
+    const expiryDate =
+        document.getElementById("purchaseExpiryDate")?.value || null;
+
+    if (!productId) {
+        showToast("Please select a product.");
+        return;
+    }
+
+    if (!Number.isInteger(quantity) || quantity < 1) {
+        showToast("Please enter a valid quantity.");
+        return;
+    }
+
+    if (!Number.isFinite(unitCost) || unitCost < 0) {
+        showToast("Please enter a valid unit cost.");
+        return;
+    }
+
+    const product = productsData.find(
+        item => Number(item.product_id) === productId
+    );
+
+    if (!product) {
+        showToast("Product not found.");
+        return;
+    }
+
+    const existingItem = purchaseItems.find(
+        item => item.product_id === productId &&
+            item.expiry_date === expiryDate &&
+            item.unit_cost === unitCost
+    );
+
+    if (existingItem) {
+        existingItem.quantity += quantity;
+    } else {
+        purchaseItems.push({
+            product_id: productId,
+            product_name: product.product_name,
+            sku: product.sku,
+            quantity,
+            unit_cost: unitCost,
+            expiry_date: expiryDate
+        });
+    }
+
+    renderPurchaseItems();
+
+    document.getElementById("purchaseQuantity").value = 1;
+    document.getElementById("purchaseUnitCost").value = 0;
+    document.getElementById("purchaseExpiryDate").value = "";
+
+    showToast("Purchase item added.");
+}
+
+function renderPurchaseItems() {
+    const tableBody = document.getElementById("purchaseItemsBody");
+    const totalElement = document.getElementById("purchaseTotal");
+
+    if (!tableBody || !totalElement) return;
+
+    if (!purchaseItems.length) {
+        tableBody.innerHTML = `
+            <tr><td colspan="6">No items added.</td></tr>
+        `;
+
+        totalElement.textContent = "₱0.00";
+        return;
+    }
+
+    tableBody.innerHTML = purchaseItems.map((item, index) => `
+        <tr>
+            <td>
+                ${escapeHTML(item.product_name)}
+                <br><small>${escapeHTML(item.sku)}</small>
+            </td>
+
+            <td>${item.quantity}</td>
+            <td>${formatCurrency(item.unit_cost)}</td>
+            <td>${formatCurrency(item.quantity * item.unit_cost)}</td>
+            <td>${escapeHTML(item.expiry_date || "—")}</td>
+
+            <td>
+                <button type="button" class="btn btn-danger"
+                    data-remove-purchase-item="${index}">Remove</button>
+            </td>
+        </tr>
+    `).join("");
+
+    const total = purchaseItems.reduce(
+        (sum, item) => sum + item.quantity * item.unit_cost,
+        0
+    );
+
+    totalElement.textContent = formatCurrency(total);
+
+    tableBody.querySelectorAll("[data-remove-purchase-item]").forEach(button => {
+        button.addEventListener("click", () => {
+            purchaseItems.splice(Number(button.dataset.removePurchaseItem), 1);
+            renderPurchaseItems();
+        });
+    });
+}
+
+// ==============================
+// SAVE PURCHASE
+// ==============================
+
+async function savePurchase(event) {
+    event.preventDefault();
+
+    if (!purchaseItems.length) {
+        showToast("Please add at least one purchase item.");
+        return;
+    }
+
+    const formData = new FormData(event.target);
+
+    const supplierId = Number(formData.get("supplier_id"));
+
+    if (!supplierId) {
+        showToast("Please select a supplier.");
+        return;
+    }
+
+    const purchaseData = {
+        supplier_id: supplierId,
+        reference_number: String(formData.get("reference_number") || "").trim() || null,
+        notes: String(formData.get("notes") || "").trim(),
+        created_by: getCurrentUserId(),
+
+        items: purchaseItems.map(item => ({
+    product_id: item.product_id,
+    quantity: item.quantity,
+    unit_cost: item.unit_cost,
+    expiry_date: null
+}))
+    };
+
+    const total = purchaseItems.reduce(
+        (sum, item) => sum + item.quantity * item.unit_cost,
+        0
+    );
+
+    if (!confirm(
+        `Save this purchase?\n\nTotal Amount: ${formatCurrency(total)}`
+    )) {
+        return;
+    }
+
+    const button = document.getElementById("savePurchaseBtn");
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Saving...";
+    }
+
+    try {
+        const result = await apiRequest("/purchases", {
+            method: "POST",
+            body: JSON.stringify(purchaseData)
+        });
+
+        closePurchaseModal();
+
+        showToast(result.message || "Purchase created successfully!");
+
+        await loadPurchases();
+
+    } catch (error) {
+        showToast(error.message);
+
+        if (button) {
+            button.disabled = false;
+            button.textContent = "Save Purchase";
+        }
+    }
+}
+
+function closePurchaseModal() {
+    if (modalRoot) modalRoot.innerHTML = "";
+}
+
+// ==============================
+// VIEW PURCHASE DETAILS
+// ==============================
+
+async function viewPurchase(id) {
+    try {
+        const result = await apiRequest(`/purchases/${id}`);
+        const purchase = result.purchase || result;
+        const items = purchase.items || purchase.purchase_items || [];
+
+        const itemRows = items.map(item => `
+            <tr>
+                <td>${escapeHTML(item.product_name || "Product")}</td>
+                <td>${Number(item.quantity || 0)}</td>
+                <td>${formatCurrency(item.unit_cost)}</td>
+                <td>${formatCurrency(item.subtotal)}</td>
+                <td>${escapeHTML(item.expiry_date || "—")}</td>
+            </tr>
+        `).join("");
+
+        modalRoot.innerHTML = `
+            <div class="modal-backdrop" id="purchaseDetailsBackdrop">
+                <div class="modal">
+                    <div class="toolbar">
+                        <h3>Purchase Details</h3>
+
+                        <button type="button" class="btn btn-secondary"
+                            id="closePurchaseDetails">×</button>
+                    </div>
+
+                    <div>
+                        <p><strong>Reference:</strong>
+                            ${escapeHTML(purchase.reference_number || `PUR-${purchase.purchase_id}`)}</p>
+
+                        <p><strong>Supplier:</strong>
+                            ${escapeHTML(purchase.supplier_name || "—")}</p>
+
+                        <p><strong>Date:</strong>
+                            ${escapeHTML(formatDate(purchase.purchase_date))}</p>
+
+                        <p><strong>Status:</strong>
+                            ${escapeHTML(purchase.status || "Pending")}</p>
+
+                        <p><strong>Notes:</strong>
+                            ${escapeHTML(purchase.notes || "—")}</p>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Cost</th>
+                                    <th>Subtotal</th>
+                                    <th>Expiry Date</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                ${itemRows || `<tr><td colspan="5">No items found.</td></tr>`}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3 style="text-align:right;">
+                        Total: ${formatCurrency(purchase.total_amount)}
+                    </h3>
+                </div>
+            </div>
+        `;
+
+        document.getElementById("closePurchaseDetails")
+            ?.addEventListener("click", closePurchaseModal);
+
+        document.getElementById("purchaseDetailsBackdrop")
+            ?.addEventListener("click", event => {
+                if (event.target.id === "purchaseDetailsBackdrop") {
+                    closePurchaseModal();
+                }
+            });
+
+    } catch (error) {
+        showToast(error.message);
+    }
+}
+
+// ==============================
+// RECEIVE PURCHASE
+// ==============================
+
+async function receivePurchase(id) {
+    const purchase = purchasesData.find(
+        item => Number(item.purchase_id) === id
+    );
+
+    if (!purchase) return;
+
+    const reference =
+        purchase.reference_number || `PUR-${purchase.purchase_id}`;
+
+    if (!confirm(
+        `Receive purchase ${reference}?\n\nThe purchased quantities will be added to inventory and batches will be recorded.`
+    )) {
+        return;
+    }
+
+    try {
+        const result = await apiRequest(`/purchases/${id}/receive`, {
+            method: "PUT"
+        });
+
+        showToast(result.message || "Purchase received successfully!");
+
+        await loadPurchases();
+        loadDashboardStats();
+
+        if (pageTitle?.textContent === "Inventory") {
+            await loadInventory();
+        }
+
+    } catch (error) {
+        showToast(error.message);
+    }
+}
+
+// ==============================
+// CANCEL PURCHASE
+// ==============================
+
+async function cancelPurchase(id) {
+    const purchase = purchasesData.find(
+        item => Number(item.purchase_id) === id
+    );
+
+    if (!purchase) return;
+
+    const reference =
+        purchase.reference_number || `PUR-${purchase.purchase_id}`;
+
+    if (!confirm(
+        `Are you sure you want to cancel purchase ${reference}?`
+    )) {
+        return;
+    }
+
+    try {
+        const result = await apiRequest(`/purchases/${id}/cancel`, {
+            method: "PUT"
+        });
+
+        showToast(result.message || "Purchase cancelled successfully!");
+
+        await loadPurchases();
+
+    } catch (error) {
+        showToast(error.message);
+    }
+}
+
+// ==============================
+// OTHER MODULES
+// ==============================
+
+function renderComingSoon(page) {
+    pageContent.innerHTML = `
+        <section class="panel">
+            <h3>${escapeHTML(pageNames[page] || "Module")}</h3>
+            <p>This module is not connected yet.</p>
+        </section>
+    `;
+}
+
+// ==============================
+// RESTORE SESSION
+// ==============================
+
+if (authToken && currentUser) {
     showApp();
+} else {
+    showAuth();
 }
