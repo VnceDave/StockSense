@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 const db = require("./db");
+const recordLogin = require("./loginHistory");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -95,19 +96,26 @@ app.get("/", (req, res) => {
 // REGISTER
 // =====================================
 
+
+// =====================================
+// REGISTER
+// =====================================
+
 app.post("/api/register", async (req, res) => {
     try {
         const {
+            shop_name,
             name,
-            full_name,
             username,
             email,
             password
         } = req.body;
 
-        const completeName = full_name || name;
+        const shopName = String(shop_name || name || "").trim();
+        const cleanUsername = String(username || "").trim();
+        const cleanEmail = String(email || "").trim().toLowerCase();
 
-        if (!completeName || !username || !email || !password) {
+        if (!shopName || !cleanUsername || !cleanEmail || !password) {
             return res.status(400).json({
                 message: "Please complete all required fields."
             });
@@ -122,7 +130,7 @@ app.post("/api/register", async (req, res) => {
         const [existing] = await db.execute(
             `SELECT user_id FROM users
              WHERE username = ? OR email = ?`,
-            [username.trim(), email.trim()]
+            [cleanUsername, cleanEmail]
         );
 
         if (existing.length) {
@@ -135,12 +143,13 @@ app.post("/api/register", async (req, res) => {
 
         await db.execute(
             `INSERT INTO users
-            (full_name, username, email, password_hash)
-            VALUES (?, ?, ?, ?)`,
+            (full_name, shop_name, username, email, password_hash)
+            VALUES (?, ?, ?, ?, ?)`,
             [
-                completeName.trim(),
-                username.trim(),
-                email.trim(),
+                shopName,
+                shopName,
+                cleanUsername,
+                cleanEmail,
                 hashedPassword
             ]
         );
@@ -152,6 +161,7 @@ app.post("/api/register", async (req, res) => {
 
     } catch (error) {
         console.error("Registration error:", error);
+
         res.status(500).json({
             message: "Registration failed."
         });
@@ -172,16 +182,30 @@ app.post("/api/login", async (req, res) => {
             });
         }
 
+        const identifier = String(username).trim();
+
         const [users] = await db.execute(
-            `SELECT user_id, full_name, username, email,
-             password_hash, role
+            `SELECT
+                user_id,
+                full_name,
+                shop_name,
+                username,
+                email,
+                password_hash,
+                role
              FROM users
              WHERE username = ? OR email = ?
              LIMIT 1`,
-            [username.trim(), username.trim()]
+            [identifier, identifier.toLowerCase()]
         );
 
         if (!users.length) {
+            await recordLogin({
+                identifier,
+                status: "FAILED",
+                req
+            });
+
             return res.status(401).json({
                 message: "Invalid username or password."
             });
@@ -195,6 +219,13 @@ app.post("/api/login", async (req, res) => {
         );
 
         if (!match) {
+            await recordLogin({
+                userId: user.user_id,
+                identifier: user.email,
+                status: "FAILED",
+                req
+            });
+
             return res.status(401).json({
                 message: "Invalid username or password."
             });
@@ -214,13 +245,23 @@ app.post("/api/login", async (req, res) => {
             { expiresIn: "8h" }
         );
 
+        await recordLogin({
+            userId: user.user_id,
+            identifier: user.email,
+            status: "SUCCESS",
+            req
+        });
+
+        const displayName = user.shop_name || user.full_name;
+
         res.json({
             success: true,
             message: "Login successful.",
             token,
             user: {
                 user_id: user.user_id,
-                name: user.full_name,
+                name: displayName,
+                shop_name: displayName,
                 full_name: user.full_name,
                 username: user.username,
                 email: user.email,
@@ -230,6 +271,7 @@ app.post("/api/login", async (req, res) => {
 
     } catch (error) {
         console.error("Login error:", error);
+
         res.status(500).json({
             message: "Login failed."
         });
@@ -490,6 +532,61 @@ app.delete("/api/products/:id", async (req, res) => {
         console.error("Delete product error:", error);
         res.status(500).json({
             message: "Failed to delete product."
+        });
+    }
+});
+
+// =====================================
+// NOTIFICATIONS
+// =====================================
+
+app.get("/api/notifications", async (req, res) => {
+    try {
+        const [products] = await db.execute(`
+            SELECT
+                p.product_id,
+                p.product_name,
+                p.reorder_level,
+                COALESCE(i.quantity, 0) AS quantity
+            FROM products p
+            LEFT JOIN inventory i
+                ON p.product_id = i.product_id
+            WHERE p.is_active = 1
+              AND COALESCE(i.quantity, 0) <= p.reorder_level
+            ORDER BY quantity ASC, p.product_name ASC
+        `);
+
+        const notifications = products.map(product => {
+            const outOfStock = Number(product.quantity) === 0;
+
+            return {
+                id: `stock-${product.product_id}`,
+                type: outOfStock ? "out_of_stock" : "low_stock",
+                title: outOfStock ? "Out of Stock" : "Low Stock",
+                message: `${product.product_name} ${
+                    outOfStock
+                        ? "is out of stock."
+                        : `has only ${product.quantity} remaining.`
+                }`,
+                product_id: product.product_id,
+                product_name: product.product_name,
+                quantity: Number(product.quantity),
+                reorder_level: Number(product.reorder_level)
+            };
+        });
+
+        res.json({
+            success: true,
+            notifications,
+            count: notifications.length
+        });
+
+    } catch (error) {
+        console.error("Get notifications error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to retrieve notifications."
         });
     }
 });
@@ -1061,18 +1158,8 @@ app.put("/api/sales/:id/cancel", async (req, res) => {
 });
 
 // =====================================
-// PURCHASES
-// =====================================
-
 // GET ALL PURCHASES
-
 // =====================================
-// GET ALL BATCHES
-// =====================================
-
- // =====================================
- // GET ALL PURCHASES
- // =====================================
 
 app.get("/api/purchases", async (req, res) => {
     try {
@@ -1088,16 +1175,25 @@ app.get("/api/purchases", async (req, res) => {
                 p.notes,
                 p.created_by,
                 u.full_name AS created_by_name,
-                (
-                    SELECT COUNT(*)
-                    FROM purchase_items pi
-                    WHERE pi.purchase_id = p.purchase_id
-                ) AS item_count
+                COUNT(pi.purchase_item_id) AS item_count
             FROM purchases p
             LEFT JOIN suppliers s
                 ON p.supplier_id = s.supplier_id
             LEFT JOIN users u
                 ON p.created_by = u.user_id
+            LEFT JOIN purchase_items pi
+                ON p.purchase_id = pi.purchase_id
+            GROUP BY
+                p.purchase_id,
+                p.supplier_id,
+                s.supplier_name,
+                p.reference_number,
+                p.purchase_date,
+                p.total_amount,
+                p.status,
+                p.notes,
+                p.created_by,
+                u.full_name
             ORDER BY p.purchase_id DESC
         `);
 
@@ -1111,51 +1207,10 @@ app.get("/api/purchases", async (req, res) => {
 
         res.status(500).json({
             success: false,
-            message: "Failed to retrieve purchases."
+            message: error.message || "Failed to load purchases."
         });
     }
 });
-
-// =====================================
-// GET ALL BATCHES
-// =====================================
-
-app.get("/api/batches", async (req, res) => {
-    try {
-        const [batches] = await db.execute(`
-            SELECT
-                b.batch_id,
-                b.product_id,
-                b.purchase_item_id,
-                b.batch_code,
-                b.quantity_received,
-                b.quantity_remaining,
-                b.received_date,
-                b.expiry_date,
-                b.created_at,
-                p.product_name,
-                p.sku
-            FROM batches b
-            LEFT JOIN products p
-                ON b.product_id = p.product_id
-            ORDER BY b.received_date DESC, b.batch_id DESC
-        `);
-
-        res.json({
-            success: true,
-            batches
-        });
-
-    } catch (error) {
-        console.error("Get batches error:", error);
-
-        res.status(500).json({
-            success: false,
-            message: "Failed to load batches."
-        });
-    }
-});
-
 // CREATE PURCHASE
 app.post("/api/purchases", async (req, res) => {
     const {
