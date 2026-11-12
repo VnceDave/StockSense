@@ -233,16 +233,17 @@ if (loginForm) {
 }
 
 // REGISTER
-if (registerForm) {
+
+  if (registerForm) {
     registerForm.addEventListener("submit", async event => {
         event.preventDefault();
 
-        const name = document.getElementById("registerName").value.trim();
+        const shopName = document.getElementById("registerName").value.trim();
         const username = document.getElementById("registerUsername").value.trim();
         const email = document.getElementById("registerEmail").value.trim();
         const password = document.getElementById("registerPassword").value;
 
-        if (!name || !username || !email || !password) {
+        if (!shopName || !username || !email || !password) {
             showToast("Please complete all required fields.");
             return;
         }
@@ -262,7 +263,12 @@ if (registerForm) {
 
             const result = await apiRequest("/register", {
                 method: "POST",
-                body: JSON.stringify({ name, username, email, password })
+                body: JSON.stringify({
+                    shop_name: shopName,
+                    username,
+                    email,
+                    password
+                })
             });
 
             showToast(result.message || "Account created successfully!");
@@ -320,8 +326,6 @@ const pageNames = {
     sales: "Sales",
     purchases: "Purchases",
     suppliers: "Suppliers",
-    batches: "Batches",
-    reports: "Reports",
     notifications: "Notifications"
 };
 
@@ -359,6 +363,10 @@ function showPage(page) {
 
         case "suppliers":
             renderSuppliers();
+            break;
+
+        case "notifications":
+            loadNotifications();
             break;
 
         default:
@@ -1317,7 +1325,7 @@ async function viewSale(id) {
     try {
         const result = await apiRequest(`/sales/${id}`);
         const sale = result.sale || result;
-        const items = sale.items || sale.sale_items || [];
+        const items = result.items || sale.items || sale.sale_items || [];
 
         const itemRows = items.map(item => `
             <tr>
@@ -2258,7 +2266,7 @@ async function savePurchase(event) {
     product_id: item.product_id,
     quantity: item.quantity,
     unit_cost: item.unit_cost,
-    expiry_date: null
+    expiry_date: item.expiry_date || null
 }))
     };
 
@@ -2314,7 +2322,7 @@ async function viewPurchase(id) {
     try {
         const result = await apiRequest(`/purchases/${id}`);
         const purchase = result.purchase || result;
-        const items = purchase.items || purchase.purchase_items || [];
+        const items = result.items || purchase.items || purchase.purchase_items || [];
 
         const itemRows = items.map(item => `
             <tr>
@@ -2477,6 +2485,60 @@ function renderComingSoon(page) {
             <p>This module is not connected yet.</p>
         </section>
     `;
+}
+
+async function loadNotifications() {
+    pageContent.innerHTML = `
+        <section class="panel">
+            <h3>Notifications</h3>
+            <p>Loading notifications...</p>
+        </section>
+    `;
+
+    try {
+        const data = await apiRequest("/notifications");
+
+        if (!data.success) {
+            throw new Error(data.message || "Failed to load notifications.");
+        }
+
+        const notifications = data.notifications || [];
+
+        if (notifications.length === 0) {
+            pageContent.innerHTML = `
+                <section class="panel">
+                    <h3>Notifications</h3>
+                    <p>No stock alerts at the moment.</p>
+                </section>
+            `;
+            return;
+        }
+
+        pageContent.innerHTML = `
+            <section class="panel">
+                <h3>Notifications (${notifications.length})</h3>
+
+                <div class="notification-list">
+                    ${notifications.map(item => `
+                        <div class="notification-item">
+                            <strong>${escapeHTML(item.title)}</strong>
+                            <p>${escapeHTML(item.message)}</p>
+                        </div>
+                    `).join("")}
+                </div>
+            </section>
+        `;
+
+    } catch (error) {
+        console.error("Notifications error:", error);
+
+        pageContent.innerHTML = `
+            <section class="panel">
+                <h3>Notifications</h3>
+                <p>Unable to load notifications. Please try again.</p>
+            </section>
+        `;
+    }
 }
 
 // ==============================
