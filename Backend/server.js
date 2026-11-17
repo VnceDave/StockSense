@@ -111,15 +111,20 @@ function validateSupplier(data) {
 function validDate(value) {
     if (!value) return true;
 
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const dateString = String(value).trim();
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
         return false;
     }
 
-    const date = new Date(`${value}T00:00:00`);
+    const [year, month, day] = dateString.split("-").map(Number);
+
+    const date = new Date(Date.UTC(year, month - 1, day));
 
     return (
-        !Number.isNaN(date.getTime()) &&
-        date.toISOString().slice(0, 10) === value
+        date.getUTCFullYear() === year &&
+        date.getUTCMonth() === month - 1 &&
+        date.getUTCDate() === day
     );
 }
 
@@ -1512,6 +1517,8 @@ app.post("/api/purchases", async (req, res) => {
         const productId = Number(item.product_id);
         const quantity = Number(item.quantity);
         const unitCost = Number(item.unit_cost);
+        console.log("EXPIRY DATE:", item.expiry_date);
+console.log("EXPIRY TYPE:", typeof item.expiry_date);
 
         if (
             !validId(productId) ||
@@ -1525,13 +1532,18 @@ app.post("/api/purchases", async (req, res) => {
                 message: "Each item needs a valid product, quantity, and unit cost."
             });
         }
+        console.log("CHECKING EXPIRY:", JSON.stringify(item.expiry_date));
 
-        if (item.expiry_date && !validDate(item.expiry_date)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid expiry date. Use YYYY-MM-DD."
-            });
-        }
+const isValidExpiry = validDate(item.expiry_date);
+
+console.log("IS VALID EXPIRY:", isValidExpiry);
+
+if (item.expiry_date && !isValidExpiry) {
+    return res.status(400).json({
+        success: false,
+        message: "Invalid expiry date. Use YYYY-MM-DD."
+    });
+}
     }
 
     let connection;
@@ -1630,6 +1642,8 @@ app.post("/api/purchases", async (req, res) => {
         const purchaseId = purchaseResult.insertId;
 
         for (const item of purchaseItems) {
+            console.log("PURCHASE ITEM:", item);
+console.log("VALID DATE RESULT:", validDate(item.expiry_date));
             await connection.execute(
                 `INSERT INTO purchase_items
                 (
@@ -1678,7 +1692,7 @@ app.post("/api/purchases", async (req, res) => {
                 : error.message || "Failed to create purchase."
         });
 
-    } finally {
+        } finally {
         if (connection) connection.release();
     }
 });

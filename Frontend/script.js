@@ -2159,8 +2159,8 @@ function addPurchaseItem() {
         document.getElementById("purchaseUnitCost")?.value
     );
 
-    const expiryDate =
-        document.getElementById("purchaseExpiryDate")?.value || null;
+    const expiryDate = document.getElementById("purchaseExpiryDate").value;
+console.log("Selected Expiry Date:", expiryDate);
 
     if (!productId) {
         showToast("Please select a product.");
