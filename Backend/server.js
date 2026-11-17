@@ -16,6 +16,41 @@ app.use(cors());
 app.use(express.json());
 
 // =====================================
+// AUTHENTICATION MIDDLEWARE
+// =====================================
+
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(" ")[1];
+
+    if (!token) {
+        return res.status(401).json({
+            success: false,
+            message: "Access token required."
+        });
+    }
+
+    if (!JWT_SECRET) {
+        return res.status(500).json({
+            success: false,
+            message: "Server authentication is not configured."
+        });
+    }
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({
+                success: false,
+                message: "Invalid or expired token."
+            });
+        }
+
+        req.user = user;
+        next();
+    });
+}
+
+// =====================================
 // HELPERS
 // =====================================
 
@@ -40,7 +75,9 @@ function validateProduct(data) {
         !Number.isFinite(cost) ||
         !Number.isFinite(selling) ||
         !Number.isInteger(reorder) ||
-        cost < 0 || selling < 0 || reorder < 0
+        cost < 0 ||
+        selling < 0 ||
+        reorder < 0
     ) {
         return "Please enter valid prices and reorder level.";
     }
@@ -74,12 +111,16 @@ function validateSupplier(data) {
 function validDate(value) {
     if (!value) return true;
 
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return false;
+    }
 
     const date = new Date(`${value}T00:00:00`);
 
-    return !Number.isNaN(date.getTime()) &&
-        date.toISOString().slice(0, 10) === value;
+    return (
+        !Number.isNaN(date.getTime()) &&
+        date.toISOString().slice(0, 10) === value
+    );
 }
 
 // =====================================
@@ -94,11 +135,7 @@ app.get("/", (req, res) => {
 
 // =====================================
 // REGISTER
-// =====================================
-
-
-// =====================================
-// REGISTER
+// PUBLIC ROUTE
 // =====================================
 
 app.post("/api/register", async (req, res) => {
@@ -128,7 +165,8 @@ app.post("/api/register", async (req, res) => {
         }
 
         const [existing] = await db.execute(
-            `SELECT user_id FROM users
+            `SELECT user_id
+             FROM users
              WHERE username = ? OR email = ?`,
             [cleanUsername, cleanEmail]
         );
@@ -163,6 +201,7 @@ app.post("/api/register", async (req, res) => {
         console.error("Registration error:", error);
 
         res.status(500).json({
+            success: false,
             message: "Registration failed."
         });
     }
@@ -170,6 +209,7 @@ app.post("/api/register", async (req, res) => {
 
 // =====================================
 // LOGIN
+// PUBLIC ROUTE
 // =====================================
 
 app.post("/api/login", async (req, res) => {
@@ -273,10 +313,18 @@ app.post("/api/login", async (req, res) => {
         console.error("Login error:", error);
 
         res.status(500).json({
+            success: false,
             message: "Login failed."
         });
     }
 });
+
+// =====================================
+// PROTECT ALL DATA API ROUTES
+// Register and Login remain public.
+// =====================================
+
+app.use("/api", authenticateToken);
 
 // =====================================
 // INVENTORY
@@ -284,8 +332,8 @@ app.post("/api/login", async (req, res) => {
 
 app.get("/api/inventory", async (req, res) => {
     try {
-        const [inventory] = await db.execute(`
-            SELECT
+        const [inventory] = await db.execute(
+            `SELECT
                 p.product_id,
                 p.sku,
                 p.product_name,
@@ -297,17 +345,23 @@ app.get("/api/inventory", async (req, res) => {
                 p.reorder_level,
                 COALESCE(i.quantity, 0) AS quantity,
                 i.last_updated
-            FROM products p
-            LEFT JOIN inventory i
+             FROM products p
+             LEFT JOIN inventory i
                 ON p.product_id = i.product_id
-            WHERE p.is_active = 1
-            ORDER BY p.product_name ASC
-        `);
+             WHERE p.user_id = ?
+               AND p.is_active = 1
+             ORDER BY p.product_name ASC`,
+            [req.user.user_id]
+        );
 
-        res.json({ success: true, inventory });
+        res.json({
+            success: true,
+            inventory
+        });
 
     } catch (error) {
         console.error("Inventory error:", error);
+
         res.status(500).json({
             success: false,
             message: "Failed to retrieve inventory."
@@ -319,10 +373,13 @@ app.get("/api/inventory", async (req, res) => {
 // PRODUCTS
 // =====================================
 
+// GET PRODUCTS
+
+// GET ALL PRODUCTS
 app.get("/api/products", async (req, res) => {
     try {
-        const [products] = await db.execute(`
-            SELECT
+        const [products] = await db.execute(
+            `SELECT
                 p.product_id,
                 p.sku,
                 p.product_name,
@@ -332,25 +389,32 @@ app.get("/api/products", async (req, res) => {
                 p.cost_price,
                 p.selling_price,
                 p.reorder_level,
-                p.created_at,
-                p.updated_at,
-                COALESCE(i.quantity, 0) AS quantity
-            FROM products p
-            LEFT JOIN inventory i
+                COALESCE(i.quantity, 0) AS quantity,
+                i.last_updated
+             FROM products p
+             LEFT JOIN inventory i
                 ON p.product_id = i.product_id
-            WHERE p.is_active = 1
-            ORDER BY p.created_at DESC
-        `);
+             WHERE p.user_id = ?
+               AND p.is_active = 1
+             ORDER BY p.product_name ASC`,
+            [req.user.user_id]
+        );
 
-        res.json({ success: true, products });
+        res.json({
+            success: true,
+            products
+        });
 
     } catch (error) {
-        console.error("Get products error:", error);
+        console.error("Products error:", error);
+
         res.status(500).json({
+            success: false,
             message: "Failed to retrieve products."
         });
     }
 });
+// ADD PRODUCT
 
 app.post("/api/products", async (req, res) => {
     const validationError = validateProduct(req.body);
@@ -382,11 +446,19 @@ app.post("/api/products", async (req, res) => {
         const [result] = await connection.execute(
             `INSERT INTO products
             (
-                sku, product_name, category, description,
-                unit, cost_price, selling_price, reorder_level
+                user_id,
+                sku,
+                product_name,
+                category,
+                description,
+                unit,
+                cost_price,
+                selling_price,
+                reorder_level
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
+                req.user.user_id,
                 sku.trim(),
                 product_name.trim(),
                 category || null,
@@ -420,8 +492,9 @@ app.post("/api/products", async (req, res) => {
         console.error("Add product error:", error);
 
         res.status(error.code === "ER_DUP_ENTRY" ? 409 : 500).json({
+            success: false,
             message: error.code === "ER_DUP_ENTRY"
-                ? "This SKU already exists."
+                ? "This SKU already exists in your shop."
                 : "Failed to add product."
         });
 
@@ -429,6 +502,8 @@ app.post("/api/products", async (req, res) => {
         if (connection) connection.release();
     }
 });
+
+// UPDATE PRODUCT
 
 app.put("/api/products/:id", async (req, res) => {
     const productId = Number(req.params.id);
@@ -461,10 +536,18 @@ app.put("/api/products/:id", async (req, res) => {
     try {
         const [result] = await db.execute(
             `UPDATE products
-             SET sku = ?, product_name = ?, category = ?,
-                 description = ?, unit = ?, cost_price = ?,
-                 selling_price = ?, reorder_level = ?
-             WHERE product_id = ? AND is_active = 1`,
+             SET
+                sku = ?,
+                product_name = ?,
+                category = ?,
+                description = ?,
+                unit = ?,
+                cost_price = ?,
+                selling_price = ?,
+                reorder_level = ?
+             WHERE product_id = ?
+               AND user_id = ?
+               AND is_active = 1`,
             [
                 sku.trim(),
                 product_name.trim(),
@@ -474,7 +557,8 @@ app.put("/api/products/:id", async (req, res) => {
                 Number(cost_price ?? 0),
                 Number(selling_price ?? 0),
                 Number(reorder_level ?? 10),
-                productId
+                productId,
+                req.user.user_id
             ]
         );
 
@@ -494,11 +578,13 @@ app.put("/api/products/:id", async (req, res) => {
 
         res.status(error.code === "ER_DUP_ENTRY" ? 409 : 500).json({
             message: error.code === "ER_DUP_ENTRY"
-                ? "This SKU is already used by another product."
+                ? "This SKU is already used by another product in your shop."
                 : "Failed to update product."
         });
     }
 });
+
+// DELETE PRODUCT
 
 app.delete("/api/products/:id", async (req, res) => {
     const productId = Number(req.params.id);
@@ -513,8 +599,10 @@ app.delete("/api/products/:id", async (req, res) => {
         const [result] = await db.execute(
             `UPDATE products
              SET is_active = 0
-             WHERE product_id = ? AND is_active = 1`,
-            [productId]
+             WHERE product_id = ?
+               AND user_id = ?
+               AND is_active = 1`,
+            [productId, req.user.user_id]
         );
 
         if (!result.affectedRows) {
@@ -530,6 +618,7 @@ app.delete("/api/products/:id", async (req, res) => {
 
     } catch (error) {
         console.error("Delete product error:", error);
+
         res.status(500).json({
             message: "Failed to delete product."
         });
@@ -538,23 +627,26 @@ app.delete("/api/products/:id", async (req, res) => {
 
 // =====================================
 // NOTIFICATIONS
+// Generated from the logged-in shop's products.
 // =====================================
 
 app.get("/api/notifications", async (req, res) => {
     try {
-        const [products] = await db.execute(`
-            SELECT
+        const [products] = await db.execute(
+            `SELECT
                 p.product_id,
                 p.product_name,
                 p.reorder_level,
                 COALESCE(i.quantity, 0) AS quantity
-            FROM products p
-            LEFT JOIN inventory i
+             FROM products p
+             LEFT JOIN inventory i
                 ON p.product_id = i.product_id
-            WHERE p.is_active = 1
-              AND COALESCE(i.quantity, 0) <= p.reorder_level
-            ORDER BY quantity ASC, p.product_name ASC
-        `);
+             WHERE p.user_id = ?
+               AND p.is_active = 1
+               AND COALESCE(i.quantity, 0) <= p.reorder_level
+             ORDER BY quantity ASC, p.product_name ASC`,
+            [req.user.user_id]
+        );
 
         const notifications = products.map(product => {
             const outOfStock = Number(product.quantity) === 0;
@@ -595,25 +687,42 @@ app.get("/api/notifications", async (req, res) => {
 // SUPPLIERS
 // =====================================
 
+// GET SUPPLIERS
+
 app.get("/api/suppliers", async (req, res) => {
     try {
-        const [suppliers] = await db.execute(`
-            SELECT supplier_id, supplier_name, contact_person,
-                   phone, email, address, status, created_at
-            FROM suppliers
-            ORDER BY supplier_id DESC
-        `);
+        const [suppliers] = await db.execute(
+            `SELECT
+                supplier_id,
+                supplier_name,
+                contact_person,
+                phone,
+                email,
+                address,
+                status,
+                created_at
+             FROM suppliers
+             WHERE user_id = ?
+             ORDER BY supplier_id DESC`,
+            [req.user.user_id]
+        );
 
-        res.json({ success: true, suppliers });
+        res.json({
+            success: true,
+            suppliers
+        });
 
     } catch (error) {
         console.error("Get suppliers error:", error);
+
         res.status(500).json({
             success: false,
             message: "Failed to retrieve suppliers."
         });
     }
 });
+
+// ADD SUPPLIER
 
 app.post("/api/suppliers", async (req, res) => {
     const validationError = validateSupplier(req.body);
@@ -637,11 +746,17 @@ app.post("/api/suppliers", async (req, res) => {
         const [result] = await db.execute(
             `INSERT INTO suppliers
             (
-                supplier_name, contact_person, phone,
-                email, address, status
+                user_id,
+                supplier_name,
+                contact_person,
+                phone,
+                email,
+                address,
+                status
             )
-            VALUES (?, ?, ?, ?, ?, ?)`,
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [
+                req.user.user_id,
                 supplier_name.trim(),
                 contact_person || null,
                 phone || null,
@@ -659,11 +774,14 @@ app.post("/api/suppliers", async (req, res) => {
 
     } catch (error) {
         console.error("Add supplier error:", error);
+
         res.status(500).json({
             message: "Failed to add supplier."
         });
     }
 });
+
+// UPDATE SUPPLIER
 
 app.put("/api/suppliers/:id", async (req, res) => {
     const supplierId = Number(req.params.id);
@@ -694,9 +812,15 @@ app.put("/api/suppliers/:id", async (req, res) => {
     try {
         const [result] = await db.execute(
             `UPDATE suppliers
-             SET supplier_name = ?, contact_person = ?,
-                 phone = ?, email = ?, address = ?, status = ?
-             WHERE supplier_id = ?`,
+             SET
+                supplier_name = ?,
+                contact_person = ?,
+                phone = ?,
+                email = ?,
+                address = ?,
+                status = ?
+             WHERE supplier_id = ?
+               AND user_id = ?`,
             [
                 supplier_name.trim(),
                 contact_person || null,
@@ -704,7 +828,8 @@ app.put("/api/suppliers/:id", async (req, res) => {
                 email || null,
                 address || null,
                 status || "Active",
-                supplierId
+                supplierId,
+                req.user.user_id
             ]
         );
 
@@ -721,11 +846,14 @@ app.put("/api/suppliers/:id", async (req, res) => {
 
     } catch (error) {
         console.error("Update supplier error:", error);
+
         res.status(500).json({
             message: "Failed to update supplier."
         });
     }
 });
+
+// DEACTIVATE SUPPLIER
 
 app.delete("/api/suppliers/:id", async (req, res) => {
     const supplierId = Number(req.params.id);
@@ -740,8 +868,9 @@ app.delete("/api/suppliers/:id", async (req, res) => {
         const [result] = await db.execute(
             `UPDATE suppliers
              SET status = 'Inactive'
-             WHERE supplier_id = ?`,
-            [supplierId]
+             WHERE supplier_id = ?
+               AND user_id = ?`,
+            [supplierId, req.user.user_id]
         );
 
         if (!result.affectedRows) {
@@ -757,6 +886,7 @@ app.delete("/api/suppliers/:id", async (req, res) => {
 
     } catch (error) {
         console.error("Deactivate supplier error:", error);
+
         res.status(500).json({
             message: "Failed to deactivate supplier."
         });
@@ -767,11 +897,12 @@ app.delete("/api/suppliers/:id", async (req, res) => {
 // SALES
 // =====================================
 
-// GET SALES
+// GET ALL SALES
+
 app.get("/api/sales", async (req, res) => {
     try {
-        const [sales] = await db.execute(`
-            SELECT
+        const [sales] = await db.execute(
+            `SELECT
                 s.sale_id,
                 s.receipt_number,
                 s.sale_date,
@@ -785,15 +916,22 @@ app.get("/api/sales", async (req, res) => {
                     FROM sale_items si
                     WHERE si.sale_id = s.sale_id
                 ) AS item_count
-            FROM sales s
-            LEFT JOIN users u ON s.created_by = u.user_id
-            ORDER BY s.sale_date DESC
-        `);
+             FROM sales s
+             LEFT JOIN users u
+                ON s.created_by = u.user_id
+             WHERE s.user_id = ?
+             ORDER BY s.sale_date DESC`,
+            [req.user.user_id]
+        );
 
-        res.json({ success: true, sales });
+        res.json({
+            success: true,
+            sales
+        });
 
     } catch (error) {
         console.error("Get sales error:", error);
+
         res.status(500).json({
             success: false,
             message: "Failed to retrieve sales."
@@ -802,6 +940,7 @@ app.get("/api/sales", async (req, res) => {
 });
 
 // GET SALE DETAILS
+
 app.get("/api/sales/:id", async (req, res) => {
     const saleId = Number(req.params.id);
 
@@ -812,12 +951,15 @@ app.get("/api/sales/:id", async (req, res) => {
     }
 
     try {
-        const [sales] = await db.execute(`
-            SELECT s.*, u.full_name AS cashier
-            FROM sales s
-            LEFT JOIN users u ON s.created_by = u.user_id
-            WHERE s.sale_id = ?
-        `, [saleId]);
+        const [sales] = await db.execute(
+            `SELECT s.*, u.full_name AS cashier
+             FROM sales s
+             LEFT JOIN users u
+                ON s.created_by = u.user_id
+             WHERE s.sale_id = ?
+               AND s.user_id = ?`,
+            [saleId, req.user.user_id]
+        );
 
         if (!sales.length) {
             return res.status(404).json({
@@ -825,8 +967,8 @@ app.get("/api/sales/:id", async (req, res) => {
             });
         }
 
-        const [items] = await db.execute(`
-            SELECT
+        const [items] = await db.execute(
+            `SELECT
                 si.sale_item_id,
                 si.product_id,
                 p.sku,
@@ -834,10 +976,13 @@ app.get("/api/sales/:id", async (req, res) => {
                 si.quantity,
                 si.unit_price,
                 si.subtotal
-            FROM sale_items si
-            INNER JOIN products p ON si.product_id = p.product_id
-            WHERE si.sale_id = ?
-        `, [saleId]);
+             FROM sale_items si
+             INNER JOIN products p
+                ON si.product_id = p.product_id
+             WHERE si.sale_id = ?
+               AND p.user_id = ?`,
+            [saleId, req.user.user_id]
+        );
 
         res.json({
             success: true,
@@ -847,6 +992,7 @@ app.get("/api/sales/:id", async (req, res) => {
 
     } catch (error) {
         console.error("Sale details error:", error);
+
         res.status(500).json({
             message: "Failed to retrieve sale details."
         });
@@ -854,13 +1000,11 @@ app.get("/api/sales/:id", async (req, res) => {
 });
 
 // CREATE SALE
-app.post("/api/sales", async (req, res) => {
-    const {
-        items,
-        payment_method,
-        created_by
-    } = req.body;
 
+app.post("/api/sales", async (req, res) => {
+    const { items, payment_method } = req.body;
+
+    const userId = req.user.user_id;
     const methods = ["Cash", "Card", "E-Wallet", "Other"];
 
     if (!Array.isArray(items) || !items.length) {
@@ -875,25 +1019,17 @@ app.post("/api/sales", async (req, res) => {
         });
     }
 
-    if (
-        created_by !== undefined &&
-        created_by !== null &&
-        !validId(created_by)
-    ) {
-        return res.status(400).json({
-            message: "Invalid cashier ID."
-        });
-    }
-
     const quantities = new Map();
 
     for (const item of items) {
         const productId = Number(item.product_id);
         const quantity = Number(item.quantity);
 
-        if (!validId(productId) ||
+        if (
+            !validId(productId) ||
             !Number.isInteger(quantity) ||
-            quantity <= 0) {
+            quantity <= 0
+        ) {
             return res.status(400).json({
                 message: "Invalid product or quantity."
             });
@@ -922,21 +1058,26 @@ app.post("/api/sales", async (req, res) => {
         let totalAmount = 0;
 
         for (const item of normalizedItems) {
-            const [products] = await connection.execute(`
-                SELECT
+            const [products] = await connection.execute(
+                `SELECT
                     p.product_id,
                     p.product_name,
                     p.selling_price,
                     i.quantity AS stock_quantity
-                FROM products p
-                INNER JOIN inventory i ON p.product_id = i.product_id
-                WHERE p.product_id = ?
-                AND p.is_active = 1
-                FOR UPDATE
-            `, [item.product_id]);
+                 FROM products p
+                 INNER JOIN inventory i
+                    ON p.product_id = i.product_id
+                 WHERE p.product_id = ?
+                   AND p.user_id = ?
+                   AND p.is_active = 1
+                 FOR UPDATE`,
+                [item.product_id, userId]
+            );
 
             if (!products.length) {
-                const error = new Error("Product not found.");
+                const error = new Error(
+                    "Product not found in your shop."
+                );
                 error.statusCode = 404;
                 throw error;
             }
@@ -970,60 +1111,73 @@ app.post("/api/sales", async (req, res) => {
         totalAmount = Number(totalAmount.toFixed(2));
 
         const receiptNumber =
-            `SS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            `SS-${userId}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-        const [saleResult] = await connection.execute(`
-            INSERT INTO sales
+        const [saleResult] = await connection.execute(
+            `INSERT INTO sales
             (
                 receipt_number,
                 total_amount,
                 payment_method,
                 status,
-                created_by
+                created_by,
+                user_id
             )
-            VALUES (?, ?, ?, 'Completed', ?)
-        `, [
-            receiptNumber,
-            totalAmount,
-            payment_method || "Cash",
-            created_by ? Number(created_by) : null
-        ]);
+            VALUES (?, ?, ?, 'Completed', ?, ?)`,
+            [
+                receiptNumber,
+                totalAmount,
+                payment_method || "Cash",
+                userId,
+                userId
+            ]
+        );
 
         const saleId = saleResult.insertId;
 
         for (const item of saleItems) {
-            await connection.execute(`
-                INSERT INTO sale_items
+            await connection.execute(
+                `INSERT INTO sale_items
                 (sale_id, product_id, quantity, unit_price, subtotal)
-                VALUES (?, ?, ?, ?, ?)
-            `, [
-                saleId,
-                item.product_id,
-                item.quantity,
-                item.unit_price,
-                item.subtotal
-            ]);
+                VALUES (?, ?, ?, ?, ?)`,
+                [
+                    saleId,
+                    item.product_id,
+                    item.quantity,
+                    item.unit_price,
+                    item.subtotal
+                ]
+            );
 
-            await connection.execute(`
-                UPDATE inventory
-                SET quantity = quantity - ?
-                WHERE product_id = ?
-            `, [item.quantity, item.product_id]);
+            await connection.execute(
+                `UPDATE inventory
+                 SET quantity = quantity - ?
+                 WHERE product_id = ?`,
+                [item.quantity, item.product_id]
+            );
 
-            await connection.execute(`
-                INSERT INTO stock_movements
+            await connection.execute(
+                `INSERT INTO stock_movements
                 (
-                    product_id, movement_type, quantity,
-                    reference_type, reference_id, remarks, created_by
+                    product_id,
+                    movement_type,
+                    quantity,
+                    reference_type,
+                    reference_id,
+                    remarks,
+                    created_by,
+                    user_id
                 )
-                VALUES (?, 'Sale', ?, 'Sale', ?, ?, ?)
-            `, [
-                item.product_id,
-                item.quantity,
-                saleId,
-                `Sold through receipt ${receiptNumber}`,
-                created_by ? Number(created_by) : null
-            ]);
+                VALUES (?, 'Sale', ?, 'Sale', ?, ?, ?, ?)`,
+                [
+                    item.product_id,
+                    item.quantity,
+                    saleId,
+                    `Sold through receipt ${receiptNumber}`,
+                    userId,
+                    userId
+                ]
+            );
         }
 
         await connection.commit();
@@ -1054,8 +1208,10 @@ app.post("/api/sales", async (req, res) => {
 });
 
 // CANCEL SALE
+
 app.put("/api/sales/:id/cancel", async (req, res) => {
     const saleId = Number(req.params.id);
+    const userId = req.user.user_id;
 
     if (!validId(saleId)) {
         return res.status(400).json({
@@ -1069,12 +1225,14 @@ app.put("/api/sales/:id/cancel", async (req, res) => {
         connection = await db.getConnection();
         await connection.beginTransaction();
 
-        const [sales] = await connection.execute(`
-            SELECT sale_id, receipt_number, status
-            FROM sales
-            WHERE sale_id = ?
-            FOR UPDATE
-        `, [saleId]);
+        const [sales] = await connection.execute(
+            `SELECT sale_id, receipt_number, status
+             FROM sales
+             WHERE sale_id = ?
+               AND user_id = ?
+             FOR UPDATE`,
+            [saleId, userId]
+        );
 
         if (!sales.length) {
             const error = new Error("Sale not found.");
@@ -1089,17 +1247,27 @@ app.put("/api/sales/:id/cancel", async (req, res) => {
         }
 
         const [items] = await connection.execute(
-            `SELECT product_id, quantity
-             FROM sale_items
-             WHERE sale_id = ?`,
-            [saleId]
+            `SELECT
+                si.product_id,
+                si.quantity
+             FROM sale_items si
+             INNER JOIN products p
+                ON si.product_id = p.product_id
+             WHERE si.sale_id = ?
+               AND p.user_id = ?`,
+            [saleId, userId]
         );
 
         for (const item of items) {
             const [inventory] = await connection.execute(
-                `SELECT inventory_id FROM inventory
-                 WHERE product_id = ? FOR UPDATE`,
-                [item.product_id]
+                `SELECT i.inventory_id
+                 FROM inventory i
+                 INNER JOIN products p
+                    ON i.product_id = p.product_id
+                 WHERE i.product_id = ?
+                   AND p.user_id = ?
+                 FOR UPDATE`,
+                [item.product_id, userId]
             );
 
             if (!inventory.length) {
@@ -1108,31 +1276,43 @@ app.put("/api/sales/:id/cancel", async (req, res) => {
                 throw error;
             }
 
-            await connection.execute(`
-                UPDATE inventory
-                SET quantity = quantity + ?
-                WHERE product_id = ?
-            `, [item.quantity, item.product_id]);
+            await connection.execute(
+                `UPDATE inventory
+                 SET quantity = quantity + ?
+                 WHERE product_id = ?`,
+                [item.quantity, item.product_id]
+            );
 
-            await connection.execute(`
-                INSERT INTO stock_movements
+            await connection.execute(
+                `INSERT INTO stock_movements
                 (
-                    product_id, movement_type, quantity,
-                    reference_type, reference_id, remarks
+                    product_id,
+                    movement_type,
+                    quantity,
+                    reference_type,
+                    reference_id,
+                    remarks,
+                    created_by,
+                    user_id
                 )
-                VALUES (?, 'Adjustment', ?, 'Sale Cancellation', ?, ?)
-            `, [
-                item.product_id,
-                item.quantity,
-                saleId,
-                `Stock restored from cancelled receipt ${sales[0].receipt_number}`
-            ]);
+                VALUES (?, 'Adjustment', ?, 'Sale Cancellation', ?, ?, ?, ?)`,
+                [
+                    item.product_id,
+                    item.quantity,
+                    saleId,
+                    `Stock restored from cancelled receipt ${sales[0].receipt_number}`,
+                    userId,
+                    userId
+                ]
+            );
         }
 
         await connection.execute(
-            `UPDATE sales SET status = 'Cancelled'
-             WHERE sale_id = ?`,
-            [saleId]
+            `UPDATE sales
+             SET status = 'Cancelled'
+             WHERE sale_id = ?
+               AND user_id = ?`,
+            [saleId, userId]
         );
 
         await connection.commit();
@@ -1158,13 +1338,15 @@ app.put("/api/sales/:id/cancel", async (req, res) => {
 });
 
 // =====================================
-// GET ALL PURCHASES
+// PURCHASES
 // =====================================
+
+// GET ALL PURCHASES
 
 app.get("/api/purchases", async (req, res) => {
     try {
-        const [purchases] = await db.execute(`
-            SELECT
+        const [purchases] = await db.execute(
+            `SELECT
                 p.purchase_id,
                 p.supplier_id,
                 s.supplier_name,
@@ -1176,14 +1358,16 @@ app.get("/api/purchases", async (req, res) => {
                 p.created_by,
                 u.full_name AS created_by_name,
                 COUNT(pi.purchase_item_id) AS item_count
-            FROM purchases p
-            LEFT JOIN suppliers s
+             FROM purchases p
+             LEFT JOIN suppliers s
                 ON p.supplier_id = s.supplier_id
-            LEFT JOIN users u
+               AND s.user_id = ?
+             LEFT JOIN users u
                 ON p.created_by = u.user_id
-            LEFT JOIN purchase_items pi
+             LEFT JOIN purchase_items pi
                 ON p.purchase_id = pi.purchase_id
-            GROUP BY
+             WHERE p.user_id = ?
+             GROUP BY
                 p.purchase_id,
                 p.supplier_id,
                 s.supplier_name,
@@ -1194,8 +1378,9 @@ app.get("/api/purchases", async (req, res) => {
                 p.notes,
                 p.created_by,
                 u.full_name
-            ORDER BY p.purchase_id DESC
-        `);
+             ORDER BY p.purchase_id DESC`,
+            [req.user.user_id, req.user.user_id]
+        );
 
         res.json({
             success: true,
@@ -1207,19 +1392,104 @@ app.get("/api/purchases", async (req, res) => {
 
         res.status(500).json({
             success: false,
-            message: error.message || "Failed to load purchases."
+            message: "Failed to load purchases."
         });
     }
 });
+
+// GET PURCHASE DETAILS
+
+app.get("/api/purchases/:id", async (req, res) => {
+    const purchaseId = Number(req.params.id);
+    const userId = req.user.user_id;
+
+    if (!validId(purchaseId)) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid purchase ID."
+        });
+    }
+
+    try {
+        const [purchases] = await db.execute(
+            `SELECT
+                p.purchase_id,
+                p.supplier_id,
+                s.supplier_name,
+                p.reference_number,
+                p.purchase_date,
+                p.total_amount,
+                p.status,
+                p.notes,
+                p.created_by,
+                u.full_name AS created_by_name
+             FROM purchases p
+             LEFT JOIN suppliers s
+                ON p.supplier_id = s.supplier_id
+               AND s.user_id = p.user_id
+             LEFT JOIN users u
+                ON p.created_by = u.user_id
+             WHERE p.purchase_id = ?
+               AND p.user_id = ?
+             LIMIT 1`,
+            [purchaseId, userId]
+        );
+
+        if (!purchases.length) {
+            return res.status(404).json({
+                success: false,
+                message: "Purchase not found."
+            });
+        }
+
+        const [items] = await db.execute(
+            `SELECT
+                pi.purchase_item_id,
+                pi.product_id,
+                pr.sku,
+                pr.product_name,
+                pr.unit,
+                pi.quantity,
+                pi.unit_cost,
+                pi.subtotal,
+                pi.expiry_date
+             FROM purchase_items pi
+             INNER JOIN products pr
+                ON pi.product_id = pr.product_id
+             WHERE pi.purchase_id = ?
+               AND pr.user_id = ?
+             ORDER BY pi.purchase_item_id ASC`,
+            [purchaseId, userId]
+        );
+
+        res.json({
+            success: true,
+            purchase: purchases[0],
+            items
+        });
+
+    } catch (error) {
+        console.error("Purchase details error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to retrieve purchase details."
+        });
+    }
+});
+
+
 // CREATE PURCHASE
+
 app.post("/api/purchases", async (req, res) => {
     const {
         supplier_id,
         reference_number,
         notes,
-        created_by,
         items
     } = req.body;
+
+    const userId = req.user.user_id;
 
     if (!Array.isArray(items) || !items.length) {
         return res.status(400).json({
@@ -1235,17 +1505,6 @@ app.post("/api/purchases", async (req, res) => {
     ) {
         return res.status(400).json({
             message: "Invalid supplier ID."
-        });
-    }
-
-    if (
-        created_by !== undefined &&
-        created_by !== null &&
-        created_by !== "" &&
-        !validId(created_by)
-    ) {
-        return res.status(400).json({
-            message: "Invalid user ID."
         });
     }
 
@@ -1267,8 +1526,6 @@ app.post("/api/purchases", async (req, res) => {
             });
         }
 
-        // EXPIRY DATE IS OPTIONAL
-        // Validate only if the user provided a date.
         if (item.expiry_date && !validDate(item.expiry_date)) {
             return res.status(400).json({
                 success: false,
@@ -1284,17 +1541,19 @@ app.post("/api/purchases", async (req, res) => {
         await connection.beginTransaction();
 
         if (supplier_id) {
-            const [suppliers] = await connection.execute(`
-                SELECT supplier_id
-                FROM suppliers
-                WHERE supplier_id = ?
-                AND status = 'Active'
-                FOR UPDATE
-            `, [Number(supplier_id)]);
+            const [suppliers] = await connection.execute(
+                `SELECT supplier_id
+                 FROM suppliers
+                 WHERE supplier_id = ?
+                   AND user_id = ?
+                   AND status = 'Active'
+                 FOR UPDATE`,
+                [Number(supplier_id), userId]
+            );
 
             if (!suppliers.length) {
                 const error = new Error(
-                    "Supplier not found or inactive."
+                    "Supplier not found or inactive in your shop."
                 );
                 error.statusCode = 404;
                 throw error;
@@ -1309,17 +1568,19 @@ app.post("/api/purchases", async (req, res) => {
             const quantity = Number(item.quantity);
             const unitCost = Number(item.unit_cost);
 
-            const [products] = await connection.execute(`
-                SELECT product_id
-                FROM products
-                WHERE product_id = ?
-                AND is_active = 1
-                FOR UPDATE
-            `, [productId]);
+            const [products] = await connection.execute(
+                `SELECT product_id
+                 FROM products
+                 WHERE product_id = ?
+                   AND user_id = ?
+                   AND is_active = 1
+                 FOR UPDATE`,
+                [productId, userId]
+            );
 
             if (!products.length) {
                 const error = new Error(
-                    `Product ${productId} not found or inactive.`
+                    `Product ${productId} not found in your shop.`
                 );
                 error.statusCode = 404;
                 throw error;
@@ -1342,30 +1603,35 @@ app.post("/api/purchases", async (req, res) => {
 
         totalAmount = Number(totalAmount.toFixed(2));
 
-        const [purchaseResult] = await connection.execute(`
-            INSERT INTO purchases
+        const [purchaseResult] = await connection.execute(
+            `INSERT INTO purchases
             (
                 supplier_id,
                 reference_number,
                 total_amount,
                 status,
                 notes,
-                created_by
+                created_by,
+                user_id
             )
-            VALUES (?, ?, ?, 'Pending', ?, ?)
-        `, [
-            supplier_id ? Number(supplier_id) : null,
-            reference_number ? String(reference_number).trim() : null,
-            totalAmount,
-            notes || null,
-            created_by ? Number(created_by) : null
-        ]);
+            VALUES (?, ?, ?, 'Pending', ?, ?, ?)`,
+            [
+                supplier_id ? Number(supplier_id) : null,
+                reference_number
+                    ? String(reference_number).trim()
+                    : null,
+                totalAmount,
+                notes || null,
+                userId,
+                userId
+            ]
+        );
 
         const purchaseId = purchaseResult.insertId;
 
         for (const item of purchaseItems) {
-            await connection.execute(`
-                INSERT INTO purchase_items
+            await connection.execute(
+                `INSERT INTO purchase_items
                 (
                     purchase_id,
                     product_id,
@@ -1374,15 +1640,16 @@ app.post("/api/purchases", async (req, res) => {
                     subtotal,
                     expiry_date
                 )
-                VALUES (?, ?, ?, ?, ?, ?)
-            `, [
-                purchaseId,
-                item.product_id,
-                item.quantity,
-                item.unit_cost,
-                item.subtotal,
-                item.expiry_date
-            ]);
+                VALUES (?, ?, ?, ?, ?, ?)`,
+                [
+                    purchaseId,
+                    item.product_id,
+                    item.quantity,
+                    item.unit_cost,
+                    item.subtotal,
+                    item.expiry_date
+                ]
+            );
         }
 
         await connection.commit();
@@ -1407,7 +1674,7 @@ app.post("/api/purchases", async (req, res) => {
         ).json({
             success: false,
             message: error.code === "ER_DUP_ENTRY"
-                ? "Reference number already exists."
+                ? "Reference number already exists in your shop."
                 : error.message || "Failed to create purchase."
         });
 
@@ -1417,23 +1684,14 @@ app.post("/api/purchases", async (req, res) => {
 });
 
 // RECEIVE PURCHASE
+
 app.put("/api/purchases/:id/receive", async (req, res) => {
     const purchaseId = Number(req.params.id);
-    const createdBy = req.body.created_by;
+    const userId = req.user.user_id;
 
     if (!validId(purchaseId)) {
         return res.status(400).json({
             message: "Invalid purchase ID."
-        });
-    }
-
-    if (
-        createdBy !== undefined &&
-        createdBy !== null &&
-        !validId(createdBy)
-    ) {
-        return res.status(400).json({
-            message: "Invalid user ID."
         });
     }
 
@@ -1443,12 +1701,14 @@ app.put("/api/purchases/:id/receive", async (req, res) => {
         connection = await db.getConnection();
         await connection.beginTransaction();
 
-        const [purchases] = await connection.execute(`
-            SELECT purchase_id, status
-            FROM purchases
-            WHERE purchase_id = ?
-            FOR UPDATE
-        `, [purchaseId]);
+        const [purchases] = await connection.execute(
+            `SELECT purchase_id, status
+             FROM purchases
+             WHERE purchase_id = ?
+               AND user_id = ?
+             FOR UPDATE`,
+            [purchaseId, userId]
+        );
 
         if (!purchases.length) {
             const error = new Error("Purchase not found.");
@@ -1464,35 +1724,42 @@ app.put("/api/purchases/:id/receive", async (req, res) => {
             throw error;
         }
 
-        const [items] = await connection.execute(`
-            SELECT
-                purchase_item_id,
-                product_id,
-                quantity,
-                expiry_date
-            FROM purchase_items
-            WHERE purchase_id = ?
-            ORDER BY product_id ASC
-        `, [purchaseId]);
+        const [items] = await connection.execute(
+            `SELECT
+                pi.purchase_item_id,
+                pi.product_id,
+                pi.quantity,
+                pi.expiry_date
+             FROM purchase_items pi
+             INNER JOIN products p
+                ON pi.product_id = p.product_id
+             WHERE pi.purchase_id = ?
+               AND p.user_id = ?
+             ORDER BY pi.product_id ASC`,
+            [purchaseId, userId]
+        );
 
         if (!items.length) {
-            const error = new Error("This purchase has no items.");
+            const error = new Error("This purchase has no valid items.");
             error.statusCode = 400;
             throw error;
         }
 
-        // Lock inventory rows before updating them.
         const productIds = [...new Set(
             items.map(item => Number(item.product_id))
         )].sort((a, b) => a - b);
 
         for (const productId of productIds) {
-            const [inventory] = await connection.execute(`
-                SELECT inventory_id
-                FROM inventory
-                WHERE product_id = ?
-                FOR UPDATE
-            `, [productId]);
+            const [inventory] = await connection.execute(
+                `SELECT i.inventory_id
+                 FROM inventory i
+                 INNER JOIN products p
+                    ON i.product_id = p.product_id
+                 WHERE i.product_id = ?
+                   AND p.user_id = ?
+                 FOR UPDATE`,
+                [productId, userId]
+            );
 
             if (!inventory.length) {
                 const error = new Error(
@@ -1506,17 +1773,18 @@ app.put("/api/purchases/:id/receive", async (req, res) => {
         for (const item of items) {
             const quantity = Number(item.quantity);
 
-            await connection.execute(`
-                UPDATE inventory
-                SET quantity = quantity + ?
-                WHERE product_id = ?
-            `, [quantity, item.product_id]);
+            await connection.execute(
+                `UPDATE inventory
+                 SET quantity = quantity + ?
+                 WHERE product_id = ?`,
+                [quantity, item.product_id]
+            );
 
             const batchCode =
                 `PUR-${purchaseId}-ITEM-${item.purchase_item_id}`;
 
-            await connection.execute(`
-                INSERT INTO batches
+            await connection.execute(
+                `INSERT INTO batches
                 (
                     product_id,
                     purchase_item_id,
@@ -1524,20 +1792,23 @@ app.put("/api/purchases/:id/receive", async (req, res) => {
                     quantity_received,
                     quantity_remaining,
                     received_date,
-                    expiry_date
+                    expiry_date,
+                    user_id
                 )
-                VALUES (?, ?, ?, ?, ?, CURRENT_DATE(), ?)
-            `, [
-                item.product_id,
-                item.purchase_item_id,
-                batchCode,
-                quantity,
-                quantity,
-                item.expiry_date
-            ]);
+                VALUES (?, ?, ?, ?, ?, CURRENT_DATE(), ?, ?)`,
+                [
+                    item.product_id,
+                    item.purchase_item_id,
+                    batchCode,
+                    quantity,
+                    quantity,
+                    item.expiry_date,
+                    userId
+                ]
+            );
 
-            await connection.execute(`
-                INSERT INTO stock_movements
+            await connection.execute(
+                `INSERT INTO stock_movements
                 (
                     product_id,
                     movement_type,
@@ -1545,23 +1816,28 @@ app.put("/api/purchases/:id/receive", async (req, res) => {
                     reference_type,
                     reference_id,
                     remarks,
-                    created_by
+                    created_by,
+                    user_id
                 )
-                VALUES (?, 'Purchase', ?, 'Purchase', ?, ?, ?)
-            `, [
-                item.product_id,
-                quantity,
-                purchaseId,
-                `Stock received from purchase ${purchaseId}`,
-                createdBy ? Number(createdBy) : null
-            ]);
+                VALUES (?, 'Purchase', ?, 'Purchase', ?, ?, ?, ?)`,
+                [
+                    item.product_id,
+                    quantity,
+                    purchaseId,
+                    `Stock received from purchase ${purchaseId}`,
+                    userId,
+                    userId
+                ]
+            );
         }
 
-        await connection.execute(`
-            UPDATE purchases
-            SET status = 'Received'
-            WHERE purchase_id = ?
-        `, [purchaseId]);
+        await connection.execute(
+            `UPDATE purchases
+             SET status = 'Received'
+             WHERE purchase_id = ?
+               AND user_id = ?`,
+            [purchaseId, userId]
+        );
 
         await connection.commit();
 
@@ -1588,8 +1864,10 @@ app.put("/api/purchases/:id/receive", async (req, res) => {
 });
 
 // CANCEL PENDING PURCHASE
+
 app.put("/api/purchases/:id/cancel", async (req, res) => {
     const purchaseId = Number(req.params.id);
+    const userId = req.user.user_id;
 
     if (!validId(purchaseId)) {
         return res.status(400).json({
@@ -1603,12 +1881,14 @@ app.put("/api/purchases/:id/cancel", async (req, res) => {
         connection = await db.getConnection();
         await connection.beginTransaction();
 
-        const [purchases] = await connection.execute(`
-            SELECT purchase_id, status
-            FROM purchases
-            WHERE purchase_id = ?
-            FOR UPDATE
-        `, [purchaseId]);
+        const [purchases] = await connection.execute(
+            `SELECT purchase_id, status
+             FROM purchases
+             WHERE purchase_id = ?
+               AND user_id = ?
+             FOR UPDATE`,
+            [purchaseId, userId]
+        );
 
         if (!purchases.length) {
             const error = new Error("Purchase not found.");
@@ -1624,11 +1904,13 @@ app.put("/api/purchases/:id/cancel", async (req, res) => {
             throw error;
         }
 
-        await connection.execute(`
-            UPDATE purchases
-            SET status = 'Cancelled'
-            WHERE purchase_id = ?
-        `, [purchaseId]);
+        await connection.execute(
+            `UPDATE purchases
+             SET status = 'Cancelled'
+             WHERE purchase_id = ?
+               AND user_id = ?`,
+            [purchaseId, userId]
+        );
 
         await connection.commit();
 

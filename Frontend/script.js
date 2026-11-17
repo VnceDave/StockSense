@@ -175,6 +175,18 @@ function logout() {
     authToken = "";
     currentUser = null;
 
+    // Clear previous account data
+    inventoryData = [];
+    productsData = [];
+    suppliersData = [];
+    salesData = [];
+    salesCart = [];
+    purchasesData = [];
+    purchaseItems = [];
+
+    productSearch = "";
+    supplierSearch = "";
+
     if (modalRoot) modalRoot.innerHTML = "";
 
     showAuth();
@@ -378,6 +390,7 @@ function showPage(page) {
 // DASHBOARD
 // ==============================
 
+
 function renderDashboard() {
     pageContent.innerHTML = `
         <div class="stats-grid">
@@ -397,12 +410,12 @@ function renderDashboard() {
             </div>
         </div>
 
-        <section class="panel">
-            <h3>Welcome to StockSense</h3>
-            <p>Manage your products and monitor your inventory in one place.</p>
+        <section class="panel" id="dashboardWelcome">
+            <h3>Welcome to StockSense!</h3>
+            <p>Your dashboard is ready. Start by adding your first product to manage your inventory.</p>
 
             <button class="btn btn-primary" id="dashboardInventoryBtn" type="button">
-                View Inventory
+                Add Your First Product
             </button>
         </section>
     `;
@@ -421,6 +434,7 @@ async function loadDashboardStats() {
         const productsElement = document.getElementById("dashboardProducts");
         const stockElement = document.getElementById("dashboardStock");
         const lowStockElement = document.getElementById("dashboardLowStock");
+        const welcomeElement = document.getElementById("dashboardWelcome");
 
         if (productsElement) {
             productsElement.textContent = items.length;
@@ -439,10 +453,24 @@ async function loadDashboardStats() {
             ).length;
         }
 
+        if (welcomeElement && items.length > 0) {
+            welcomeElement.innerHTML = `
+                <h3>Welcome to StockSense!</h3>
+                <p>Your inventory overview is ready. You can manage your products and monitor your stock here.</p>
+                <button class="btn btn-primary" id="dashboardInventoryBtn" type="button">
+                    View Inventory
+                </button>
+            `;
+
+            document.getElementById("dashboardInventoryBtn")
+                ?.addEventListener("click", () => showPage("inventory"));
+        }
+
     } catch (error) {
         console.error("Dashboard error:", error);
     }
 }
+
 
 // ==============================
 // INVENTORY
