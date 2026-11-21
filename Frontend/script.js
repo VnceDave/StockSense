@@ -137,6 +137,8 @@ function formatDate(value) {
 // ==============================
 
 function showApp() {
+    const publicWebsite = document.getElementById("publicWebsite");
+setHidden(publicWebsite, true);
     setHidden(authScreen, true);
     setHidden(app, false);
 
@@ -157,16 +159,33 @@ function showApp() {
     showPage("dashboard");
 }
 
-function showAuth() {
+
+function showAuth(tab = "login") {
+    const publicWebsite = document.getElementById("publicWebsite");
+
+    // Keep the public website visible
+    setHidden(publicWebsite, false);
     setHidden(authScreen, false);
     setHidden(app, true);
-    setHidden(loginForm, false);
-    setHidden(registerForm, true);
 
-    document.querySelectorAll("[data-auth-tab]").forEach(tab => {
-        tab.classList.toggle("active", tab.dataset.authTab === "login");
+    const selectedTab = tab === "register" ? "register" : "login";
+
+    setHidden(loginForm, selectedTab !== "login");
+    setHidden(registerForm, selectedTab !== "register");
+
+    document.querySelectorAll("[data-auth-tab]").forEach(item => {
+        item.classList.toggle(
+            "active",
+            item.dataset.authTab === selectedTab
+        );
     });
 }
+
+function closeAuth() {
+    setHidden(authScreen, true);
+    setHidden(publicWebsite, false);
+}
+
 
 function logout() {
     localStorage.removeItem("stocksense_token");
@@ -2600,7 +2619,7 @@ async function loadNotifications() {
 if (authToken && currentUser) {
     showApp();
 } else {
-    showAuth();
+    showPublicWebsite();
 }
 // Show / Hide Login Password
 const loginPassword = document.getElementById("loginPassword");
