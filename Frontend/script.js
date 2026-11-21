@@ -391,32 +391,53 @@ function showPage(page) {
 // ==============================
 
 
+
 function renderDashboard() {
     pageContent.innerHTML = `
-        <div class="stats-grid">
-            <div class="panel">
-                <p>Total Products</p>
-                <h2 id="dashboardProducts">0</h2>
-            </div>
+        <div class="dashboard-heading">
+            <div>
 
-            <div class="panel">
-                <p>Total Stock</p>
-                <h2 id="dashboardStock">0</h2>
-            </div>
-
-            <div class="panel">
-                <p>Low Stock Items</p>
-                <h2 id="dashboardLowStock">0</h2>
+                <p>Here's what's happening with your inventory today.</p>
             </div>
         </div>
 
-        <section class="panel" id="dashboardWelcome">
-            <h3>Welcome to StockSense!</h3>
-            <p>Your dashboard is ready. Start by adding your first product to manage your inventory.</p>
+        <div class="stats-grid dashboard-stats">
+            <section class="panel stat-card">
+                <div class="stat-icon">📦</div>
+                <p>Total Products</p>
+                <h2 id="dashboardProducts">0</h2>
+                <span>Products in your inventory</span>
+            </section>
 
-            <button class="btn btn-primary" id="dashboardInventoryBtn" type="button">
-                Add Your First Product
-            </button>
+            <section class="panel stat-card">
+                <div class="stat-icon">📊</div>
+                <p>Total Stock</p>
+                <h2 id="dashboardStock">0</h2>
+                <span>Total available quantity</span>
+            </section>
+
+            <section class="panel stat-card">
+                <div class="stat-icon">⚠️</div>
+                <p>Low Stock Items</p>
+                <h2 id="dashboardLowStock">0</h2>
+                <span>Items needing attention</span>
+            </section>
+        </div>
+
+        <section class="panel dashboard-welcome" id="dashboardWelcome">
+            <div class="welcome-content">
+                <span class="dashboard-eyebrow">YOUR INVENTORY, SIMPLIFIED</span>
+                <h2>Welcome to StockSense!</h2>
+                <p>Your inventory overview is ready. Start managing your products and keep track of your stock in one place.</p>
+
+                <button class="btn btn-primary" id="dashboardInventoryBtn" type="button">
+                    Explore Inventory →
+                </button>
+            </div>
+
+            <div class="welcome-decoration">
+                <span>🌿</span>
+            </div>
         </section>
     `;
 
@@ -425,6 +446,7 @@ function renderDashboard() {
 
     loadDashboardStats();
 }
+
 
 async function loadDashboardStats() {
     try {
@@ -577,11 +599,14 @@ function openProductModal(product = null) {
 
                 <form id="productForm">
                     <div class="form-grid">
-                        <div class="field">
-                            <label>SKU *</label>
-                            <input name="sku" maxlength="60" required
-                                value="${escapeHTML(product?.sku || "")}">
-                        </div>
+                       <div class="field">
+    <label>SKU</label>
+    <input
+        type="text"
+        value="${escapeHTML(product?.sku || "Auto-generated after saving")}"
+        readonly
+    >
+</div>
 
                         <div class="field">
                             <label>Product Name *</label>
@@ -674,7 +699,6 @@ async function saveProduct(event, existingProduct = null) {
     const formData = new FormData(event.target);
 
     const product = {
-        sku: String(formData.get("sku") || "").trim(),
         product_name: String(formData.get("product_name") || "").trim(),
         category: String(formData.get("category") || "").trim(),
         unit: String(formData.get("unit") || "piece").trim() || "piece",
@@ -2577,4 +2601,82 @@ if (authToken && currentUser) {
     showApp();
 } else {
     showAuth();
+}
+// Show / Hide Login Password
+const loginPassword = document.getElementById("loginPassword");
+const toggleLoginPassword = document.getElementById("toggleLoginPassword");
+
+if (loginPassword && toggleLoginPassword) {
+    toggleLoginPassword.addEventListener("click", function () {
+        const isHidden = loginPassword.type === "password";
+
+        loginPassword.type = isHidden ? "text" : "password";
+
+        toggleLoginPassword.innerHTML = isHidden
+            ? '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l18 18"/><path d="M10.6 10.6a2 2 0 002.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0121 12a11 11 0 01-3 4.5"/><path d="M6.2 6.2A11 11 0 003 12a11 11 0 0018 0"/></svg>'
+            : '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+
+        toggleLoginPassword.setAttribute(
+            "aria-label",
+            isHidden ? "Hide password" : "Show password"
+        );
+    });
+}
+
+// Show / Hide Register Password
+function setupPasswordToggle(inputId, buttonId) {
+    const passwordInput = document.getElementById(inputId);
+    const toggleButton = document.getElementById(buttonId);
+
+    if (!passwordInput || !toggleButton) return;
+
+    toggleButton.addEventListener("click", function () {
+        const isHidden = passwordInput.type === "password";
+
+        passwordInput.type = isHidden ? "text" : "password";
+
+        toggleButton.innerHTML = isHidden
+            ? `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3l18 18"/>
+                <path d="M10.6 10.6a2 2 0 002.8 2.8"/>
+                <path d="M9.9 5.2A10.8 10.8 0 0121 12a11 11 0 01-3 4.5"/>
+                <path d="M6.2 6.2A11 11 0 003 12a11 11 0 0018 0"/>
+               </svg>`
+            : `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/>
+                <circle cx="12" cy="12" r="3"/>
+               </svg>`;
+
+        toggleButton.setAttribute(
+            "aria-label",
+            isHidden ? "Hide password" : "Show password"
+        );
+    });
+}
+
+setupPasswordToggle("registerPassword", "toggleRegisterPassword");
+setupPasswordToggle("confirmPassword", "toggleConfirmPassword");
+
+
+// Validate Register Password and Confirm Password
+if (registerForm) {
+    registerForm.addEventListener("submit", function (event) {
+        const password = document.getElementById("registerPassword").value;
+        const confirmPassword = document.getElementById("confirmPassword").value;
+        const registerMessage = document.getElementById("registerMessage");
+
+        if (password !== confirmPassword) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+
+            registerMessage.textContent = "Passwords do not match. Please try again.";
+            registerMessage.style.color = "#dc2626";
+
+            document.getElementById("confirmPassword").focus();
+
+            return false;
+        }
+
+        registerMessage.textContent = "";
+    }, true);
 }

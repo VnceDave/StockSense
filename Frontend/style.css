@@ -789,3 +789,652 @@ footer {
         grid-column: auto;
     }
 }
+/* Password Show/Hide */
+.password-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.password-wrapper input {
+    width: 100%;
+    padding-right: 45px;
+    box-sizing: border-box;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 5px;
+    color: #1d3025;
+}
+
+
+/* =========================================
+   STOCKSENSE AUTH REDESIGN
+   Login and Register Only
+========================================= */
+
+.auth-screen {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 35px 20px;
+    overflow: hidden;
+    background:
+        linear-gradient(
+            120deg,
+            rgba(5, 20, 13, 0.88),
+            rgba(8, 35, 23, 0.68),
+            rgba(5, 15, 10, 0.88)
+        ),
+        url("bglogin.png")
+        center / cover no-repeat;
+}
+
+
+
+.auth-card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 440px;
+    padding: 38px 36px;
+
+    background: rgba(8, 43, 27, 0.58);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+
+    border: 1px solid rgba(180, 220, 190, 0.28);
+    border-radius: 22px;
+
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+    color: #fff;
+}
+
+
+
+.auth-card .brand-mark {
+    width: 58px;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 14px;
+    border-radius: 17px;
+    background: rgba(255, 255, 255, 0.1);
+    font-size: 29px;
+}
+
+.auth-card > h1 {
+    margin: 0;
+    color: #fff;
+    text-align: center;
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -1px;
+}
+
+.auth-card .tagline {
+    margin: 7px 0 28px;
+    color: #a8c9b2;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+}
+
+.auth-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 5px;
+    margin-bottom: 28px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.auth-tab {
+    flex: 1;
+    padding: 11px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: #b8c9be;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.auth-tab.active {
+    background: #176b48;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.auth-form h2 {
+    margin: 0 0 7px;
+    color: #fff;
+    font-size: 23px;
+    font-weight: 700;
+}
+
+.auth-form .muted {
+    margin: 0 0 23px;
+    color: #a9b9ae;
+    font-size: 13px;
+}
+
+.auth-form label {
+    display: block;
+    margin: 15px 0 7px;
+    color: #e0eae3;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.auth-form input {
+    width: 100%;
+    min-height: 46px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    outline: none;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-family: inherit;
+    font-size: 13px;
+    transition: 0.2s ease;
+}
+
+.auth-form input::placeholder {
+    color: #9aaa9f;
+}
+
+.auth-form input:focus {
+    border-color: #55b982;
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 0 0 3px rgba(85, 185, 130, 0.13);
+}
+
+.password-wrapper {
+    position: relative;
+}
+
+.password-wrapper input {
+    padding-right: 48px;
+}
+
+.toggle-password {
+    position: absolute;
+    top: 50%;
+    right: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(-50%);
+    padding: 4px;
+    border: 0;
+    background: transparent;
+    color: #b8c9be;
+    cursor: pointer;
+}
+
+.toggle-password:hover {
+    color: #72d49c;
+}
+
+.auth-form .btn-primary {
+    min-height: 48px;
+    margin-top: 23px;
+    border: 0;
+    border-radius: 10px;
+    background: #16764d;
+    color: #fff;
+    font-family: inherit;
+    font-weight: 700;
+    transition: 0.2s ease;
+}
+
+.auth-form .btn-primary:hover {
+    background: #1b8b5b;
+    transform: translateY(-1px);
+}
+
+.auth-form .form-message {
+    color: #f5b4a9;
+    font-size: 12px;
+}
+
+.auth-note {
+    margin: 25px 0 0;
+    color: #91a79a;
+    text-align: center;
+    font-size: 10px;
+}
+
+@media (max-width: 480px) {
+    .auth-screen {
+        padding: 18px 14px;
+    }
+
+    .auth-card {
+        padding: 30px 22px;
+    }
+
+    .auth-card > h1 {
+        font-size: 27px;
+    }
+}
+
+/* =================================
+   STOCKSENSE DASHBOARD REDESIGN
+================================= */
+
+.app .dashboard-heading {
+    margin-bottom: 28px;
+}
+
+.app .dashboard-eyebrow {
+    display: inline-block;
+    color: #126b48;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    margin-bottom: 9px;
+}
+
+.app .dashboard-heading h2 {
+    color: #1d3025;
+    font-size: 30px;
+    font-weight: 800;
+    margin: 0 0 7px;
+}
+
+.app .dashboard-heading p {
+    color: #829187;
+    font-size: 14px;
+    margin: 0;
+}
+
+.app .dashboard-stats {
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.app .dashboard-stats .stat-card {
+    position: relative;
+    overflow: hidden;
+    padding: 25px;
+    border: 1px solid #e5ece7;
+    border-radius: 18px;
+    background: linear-gradient(145deg, #ffffff, #f5faf6);
+    box-shadow: 0 8px 24px rgba(29, 48, 37, 0.045);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.app .dashboard-stats .stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(29, 48, 37, 0.09);
+}
+
+.app .stat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    margin-bottom: 19px;
+    border-radius: 14px;
+    background: #e9f5ee;
+    font-size: 21px;
+}
+
+.app .stat-card p {
+    color: #829187;
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0 0 8px;
+}
+
+.app .stat-card h2 {
+    color: #126b48;
+    font-size: 32px;
+    font-weight: 800;
+    margin: 0 0 7px;
+}
+
+.app .stat-card > span {
+    color: #9aa69e;
+    font-size: 12px;
+}
+
+.app .dashboard-welcome {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 235px;
+    padding: 38px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid #dcece1;
+    border-radius: 22px;
+    background: linear-gradient(115deg, #e5f4e9 0%, #f5faf6 65%, #ffffff 100%);
+    box-shadow: 0 8px 24px rgba(29, 48, 37, 0.04);
+}
+
+.app .welcome-content {
+    position: relative;
+    z-index: 1;
+    max-width: 570px;
+}
+
+.app .welcome-content h2 {
+    color: #1d3025;
+    font-size: 27px;
+    font-weight: 800;
+    margin: 5px 0 12px;
+}
+
+.app .welcome-content p {
+    color: #68796e;
+    font-size: 14px;
+    line-height: 1.8;
+    max-width: 470px;
+    margin: 0 0 22px;
+}
+
+.app .welcome-decoration {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 150px;
+    height: 150px;
+    flex-shrink: 0;
+    margin-left: 20px;
+    border-radius: 50%;
+    background: rgba(18, 107, 72, 0.09);
+}
+
+.app .welcome-decoration span {
+    font-size: 75px;
+}
+
+@media (max-width: 650px) {
+    .app .dashboard-heading h2 {
+        font-size: 25px;
+    }
+
+    .app .dashboard-welcome {
+        padding: 25px;
+    }
+
+    .app .welcome-decoration {
+        display: none;
+    }
+
+    .app .welcome-content h2 {
+        font-size: 23px;
+    }
+}
+
+/* =========================================
+   STOCKSENSE - GLASS DASHBOARD
+========================================= */
+
+    
+
+.app .main-content {
+    position: relative;
+    min-height: 100vh;
+    background:
+        linear-gradient(
+            rgba(244, 249, 241, 0.12),
+            rgba(244, 249, 241, 0.12)
+        ),
+        url("https://images.unsplash.com/photo-1448375240586-882707db888b")
+        center center / cover no-repeat;
+}
+
+
+
+.app .dashboard-heading {
+    margin-bottom: 30px;
+}
+
+.app .dashboard-eyebrow {
+    display: inline-block;
+    color: #126b48;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2.5px;
+    margin-bottom: 10px;
+}
+
+.app .dashboard-heading h2 {
+    color: #1d3025;
+    font-size: 32px;
+    font-weight: 800;
+    margin: 0 0 8px;
+}
+
+.app .dashboard-heading p {
+    color: #829187;
+    font-size: 14px;
+    margin: 0;
+}
+
+/* GLASS STAT CARDS */
+
+.app .dashboard-stats {
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.app .dashboard-stats .stat-card {
+    position: relative;
+    overflow: hidden;
+    padding: 26px;
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.48);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow:
+        0 8px 32px rgba(31, 75, 48, 0.07),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition: all 0.3s ease;
+}
+
+.app .dashboard-stats .stat-card::after {
+    content: "";
+    position: absolute;
+    width: 130px;
+    height: 130px;
+    right: -45px;
+    top: -55px;
+    border-radius: 50%;
+    background: rgba(67, 151, 99, 0.09);
+}
+
+.app .dashboard-stats .stat-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.68);
+    box-shadow: 0 14px 35px rgba(31, 75, 48, 0.11);
+}
+
+.app .stat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255,255,255,0.8);
+    border-radius: 15px;
+    background: rgba(220, 241, 226, 0.75);
+    font-size: 21px;
+}
+
+.app .stat-card p {
+    color: #829187;
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0 0 9px;
+}
+
+.app .stat-card h2 {
+    color: #126b48;
+    font-size: 35px;
+    font-weight: 800;
+    margin: 0 0 8px;
+}
+
+.app .stat-card > span {
+    color: #91a096;
+    font-size: 12px;
+}
+
+/* GLASS WELCOME PANEL */
+
+.app .dashboard-welcome {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 250px;
+    padding: 40px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.8);
+    border-radius: 25px;
+    background:
+        linear-gradient(120deg,
+            rgba(216, 240, 222, 0.78),
+            rgba(255, 255, 255, 0.53));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow:
+        0 12px 35px rgba(31, 75, 48, 0.07),
+        inset 0 1px 0 rgba(255,255,255,0.9);
+}
+
+.app .dashboard-welcome::before {
+    content: "";
+    position: absolute;
+    width: 280px;
+    height: 280px;
+    right: 5%;
+    top: -120px;
+    border-radius: 50%;
+    background: rgba(63, 145, 91, 0.10);
+    filter: blur(5px);
+}
+
+.app .dashboard-welcome::after {
+    content: "";
+    position: absolute;
+    width: 180px;
+    height: 180px;
+    right: 20%;
+    bottom: -120px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+    filter: blur(10px);
+}
+
+.app .welcome-content {
+    position: relative;
+    z-index: 2;
+    max-width: 580px;
+}
+
+.app .welcome-content h2 {
+    color: #1d3025;
+    font-size: 29px;
+    font-weight: 800;
+    margin: 6px 0 12px;
+}
+
+.app .welcome-content p {
+    color: #68796e;
+    font-size: 14px;
+    line-height: 1.8;
+    max-width: 480px;
+    margin: 0 0 24px;
+}
+
+.app .welcome-decoration {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 155px;
+    height: 155px;
+    flex-shrink: 0;
+    margin-left: 20px;
+    border: 1px solid rgba(255,255,255,0.75);
+    border-radius: 50%;
+    background: rgba(255,255,255,0.35);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 25px rgba(31,75,48,0.07);
+}
+
+.app .welcome-decoration span {
+    font-size: 75px;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 650px) {
+    .app .dashboard-heading h2 {
+        font-size: 26px;
+    }
+
+    .app .dashboard-welcome {
+        padding: 25px;
+    }
+
+    .app .welcome-decoration {
+        display: none;
+    }
+
+    .app .welcome-content h2 {
+        font-size: 23px;
+    }
+}
+
+/* DASHBOARD GLASS SURFACES */
+
+.app #pageContent .panel {
+    background: rgba(255, 255, 255, 0.48);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    border-radius: 20px;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow:
+        0 8px 28px rgba(31, 75, 48, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.app #pageContent .btn-primary {
+    background: linear-gradient(135deg, #168052, #0b5639);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(18, 107, 72, 0.18);
+    transition: all 0.25s ease;
+}
+
+.app #pageContent .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(18, 107, 72, 0.25);
+}

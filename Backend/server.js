@@ -59,10 +59,6 @@ function validId(value) {
 }
 
 function validateProduct(data) {
-    if (!data.sku || !String(data.sku).trim()) {
-        return "SKU is required.";
-    }
-
     if (!data.product_name || !String(data.product_name).trim()) {
         return "Product name is required.";
     }
@@ -421,6 +417,8 @@ app.get("/api/products", async (req, res) => {
 });
 // ADD PRODUCT
 
+
+
 app.post("/api/products", async (req, res) => {
     const validationError = validateProduct(req.body);
 
@@ -431,7 +429,6 @@ app.post("/api/products", async (req, res) => {
     }
 
     const {
-        sku,
         product_name,
         category,
         description,
@@ -443,11 +440,33 @@ app.post("/api/products", async (req, res) => {
     } = req.body;
 
     let connection;
+    let lockName;
+    let lockAcquired = false;
+    let transactionStarted = false;
 
     try {
         connection = await db.getConnection();
-        await connection.beginTransaction();
 
+        // Lock SKU numbering for this specific user
+        lockName = `stocksense_sku_${req.user.user_id}`;
+
+        const [lockRows] = await connection.execute(
+            `SELECT GET_LOCK(?, 10) AS lock_status`,
+            [lockName]
+        );
+
+        if (Number(lockRows[0].lock_status) !== 1) {
+            throw new Error(
+                "Could not secure SKU numbering. Please try again."
+            );
+        }
+
+        lockAcquired = true;
+
+        await connection.beginTransaction();
+        transactionStarted = true;
+
+        // Insert product with temporary SKU
         const [result] = await connection.execute(
             `INSERT INTO products
             (
@@ -461,10 +480,9 @@ app.post("/api/products", async (req, res) => {
                 selling_price,
                 reorder_level
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            VALUES (?, CONCAT('TEMP-', UUID()), ?, ?, ?, ?, ?, ?, ?)`,
             [
                 req.user.user_id,
-                sku.trim(),
                 product_name.trim(),
                 category || null,
                 description || null,
@@ -477,36 +495,83 @@ app.post("/api/products", async (req, res) => {
 
         const productId = result.insertId;
 
+        // Get the highest SKU number for this user only
+        const [skuRows] = await connection.execute(
+            `SELECT MAX(
+                CASE
+                    WHEN sku REGEXP '^PRD-[0-9]+$'
+                    THEN CAST(SUBSTRING(sku, 5) AS UNSIGNED)
+                    ELSE 0
+                END
+            ) AS last_number
+             FROM products
+             WHERE user_id = ?`,
+            [req.user.user_id]
+        );
+
+        const nextNumber =
+            Number(skuRows[0].last_number || 0) + 1;
+
+        const sku = `PRD-${String(nextNumber).padStart(3, "0")}`;
+
+        // Assign generated SKU
+        await connection.execute(
+            `UPDATE products
+             SET sku = ?
+             WHERE product_id = ?
+               AND user_id = ?`,
+            [sku, productId, req.user.user_id]
+        );
+
+        // Create inventory record
         await connection.execute(
             `INSERT INTO inventory (product_id, quantity)
              VALUES (?, ?)`,
-            [productId, Number(quantity ?? 0)]
+            [
+                productId,
+                Number(quantity ?? 0)
+            ]
         );
 
         await connection.commit();
+        transactionStarted = false;
 
         res.status(201).json({
             success: true,
             message: "Product added successfully!",
-            product_id: productId
+            product_id: productId,
+            sku
         });
 
     } catch (error) {
-        if (connection) await connection.rollback();
+        if (connection && transactionStarted) {
+            await connection.rollback();
+            transactionStarted = false;
+        }
 
         console.error("Add product error:", error);
 
-        res.status(error.code === "ER_DUP_ENTRY" ? 409 : 500).json({
+        res.status(500).json({
             success: false,
-            message: error.code === "ER_DUP_ENTRY"
-                ? "This SKU already exists in your shop."
-                : "Failed to add product."
+            message: "Failed to add product."
         });
 
     } finally {
-        if (connection) connection.release();
+        try {
+            if (connection && lockAcquired) {
+                await connection.execute(
+                    `SELECT RELEASE_LOCK(?)`,
+                    [lockName]
+                );
+            }
+        } finally {
+            if (connection) {
+                connection.release();
+            }
+        }
     }
 });
+
 
 // UPDATE PRODUCT
 
@@ -528,7 +593,6 @@ app.put("/api/products/:id", async (req, res) => {
     }
 
     const {
-        sku,
         product_name,
         category,
         description,
@@ -542,7 +606,6 @@ app.put("/api/products/:id", async (req, res) => {
         const [result] = await db.execute(
             `UPDATE products
              SET
-                sku = ?,
                 product_name = ?,
                 category = ?,
                 description = ?,
@@ -554,7 +617,6 @@ app.put("/api/products/:id", async (req, res) => {
                AND user_id = ?
                AND is_active = 1`,
             [
-                sku.trim(),
                 product_name.trim(),
                 category || null,
                 description || null,
