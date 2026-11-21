@@ -1,9 +1,0 @@
-
-{
-  "name": "stocksense",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "start": "npm.cmd --prefix Backend start"
-  }
-}
