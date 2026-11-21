@@ -1,5 +1,5 @@
 
-const API_BASE = "http://localhost:3000/api";
+const API_BASE = "https://stocksense-8b0g.onrender.com/api";
 
 let currentUser = null;
 let authToken = localStorage.getItem("stocksense_token") || "";
