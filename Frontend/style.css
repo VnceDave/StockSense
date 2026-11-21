@@ -55,15 +55,20 @@ button:disabled {
     background: linear-gradient(135deg, #e5f4e9, #f8fbf8);
 }
 
+
+
+/* LIGHT GREEN GLASS LOGIN CARD */
+
 .auth-card {
-    background: #fff;
-    width: 440px;
-    max-width: 100%;
-    padding: 34px;
-    border: 1px solid var(--line);
-    border-radius: 20px;
-    box-shadow: var(--shadow);
+    background: rgba(190, 235, 210, 0.22) !important;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(235, 255, 242, 0.42) !important;
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.16);
+    border-radius: 28px;
 }
+
+
 
 .brand-mark {
     font-size: 34px;
@@ -1437,4 +1442,653 @@ footer {
 .app #pageContent .btn-primary:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(18, 107, 72, 0.25);
+}
+
+/* =====================================
+   STOCKSENSE MODERN GREEN REDESIGN
+   VISUAL DESIGN ONLY
+===================================== */
+
+.app {
+    background: #f5f8f5;
+    min-height: 100vh;
+}
+
+/* SIDEBAR */
+.app .sidebar {
+    background: #123d2b;
+    border-right: none;
+    box-shadow: 5px 0 20px rgba(18, 61, 43, 0.08);
+    padding: 26px 16px;
+}
+
+.app .brand {
+    color: #ffffff;
+    padding-bottom: 38px;
+}
+
+.app .brand strong {
+    color: #ffffff;
+    font-size: 21px;
+    letter-spacing: -0.5px;
+}
+
+.app .brand small {
+    color: #b5cbbd;
+}
+
+.app .nav-label {
+    color: #91b39e;
+    letter-spacing: 1.5px;
+}
+
+.app .nav-link {
+    color: #d2e2d7;
+    padding: 13px 14px;
+    border-radius: 10px;
+    transition: 0.2s ease;
+}
+
+.app .nav-link:hover {
+    background: rgba(255,255,255,0.09);
+    color: white;
+}
+
+.app .nav-link.active {
+    background: #e4f2e9;
+    color: #126b48;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+}
+
+.app .sidebar-bottom {
+    border-top: 1px solid rgba(255,255,255,0.15);
+}
+
+.app .user-info strong {
+    color: white;
+}
+
+.app .user-info small {
+    color: #b5cbbd;
+}
+
+.app .user-avatar {
+    background: #d9f0e2;
+    color: #126b48;
+}
+
+/* MAIN CONTENT */
+.app .main-content {
+    background: #f5f8f5;
+    padding: 30px 38px;
+}
+
+.app .topbar {
+    border-bottom: 1px solid #e2eae4;
+    padding-bottom: 22px;
+    margin-bottom: 30px;
+}
+
+.app .eyebrow {
+    color: #168153;
+    font-size: 10px;
+    letter-spacing: 2px;
+}
+
+.app .topbar h1 {
+    color: #183d2b;
+    font-size: 29px;
+    font-weight: 800;
+}
+
+/* CONNECTION STATUS */
+.app .status-pill {
+    background: #e4f4e9;
+    color: #126b48;
+    padding: 10px 15px;
+    border-radius: 30px;
+}
+
+/* DASHBOARD CARDS */
+.app .stat-card,
+.app .panel {
+    background: #ffffff;
+    border: 1px solid #e5ece7;
+    border-radius: 18px;
+    box-shadow: 0 7px 22px rgba(24, 61, 43, 0.045);
+    transition: 0.2s ease;
+}
+
+.app .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 26px rgba(24, 61, 43, 0.09);
+}
+
+.app .stat-card h2 {
+    color: #126b48;
+    font-size: 32px;
+    font-weight: 800;
+}
+
+.app .stat-card p {
+    color: #718278;
+    font-weight: 600;
+}
+
+/* WELCOME SECTION */
+.app .dashboard-welcome {
+    border: 1px solid #e3ece5;
+    border-radius: 20px;
+    background: linear-gradient(120deg, #e3f2e8, #ffffff);
+    box-shadow: 0 8px 25px rgba(24, 61, 43, 0.05);
+}
+
+/* TABLES */
+.app .table-wrap {
+    border: 1px solid #e5ece7;
+    border-radius: 14px;
+    box-shadow: 0 5px 18px rgba(24, 61, 43, 0.035);
+}
+
+.app th {
+    background: #edf5ef;
+    color: #557262;
+}
+
+.app td {
+    color: #40594a;
+}
+
+/* BUTTONS */
+.app .btn-primary {
+    background: #14764e;
+    border-radius: 9px;
+    transition: 0.2s ease;
+}
+
+.app .btn-primary:hover {
+    background: #0d593c;
+    transform: translateY(-1px);
+}
+
+/* FOOTER */
+.app footer {
+    color: #91a096;
+}
+
+/* RESPONSIVE */
+@media (max-width: 800px) {
+    .app .sidebar {
+        background: #123d2b;
+    }
+
+    .app .main-content {
+        padding: 20px 15px;
+    }
+}
+
+/* =========================================
+   STOCKSENSE - CLEAR GLASS REDESIGN
+   Background + Glassmorphism
+========================================= */
+
+/* MAIN BACKGROUND */
+.app .main-content {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(7, 35, 24, 0.42),
+            rgba(13, 65, 43, 0.25),
+            rgba(8, 30, 22, 0.42)
+        ),
+        url("https://images.unsplash.com/photo-1448375240586-882707db888b")
+        center center / cover fixed no-repeat !important;
+}
+
+/* TOPBAR */
+.app .topbar {
+    border-bottom: 1px solid rgba(255,255,255,0.22);
+}
+
+.app .eyebrow,
+.app .topbar h1 {
+    color: #ffffff;
+}
+
+.app .status-pill {
+    background: rgba(220, 255, 230, 0.22);
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.25);
+    backdrop-filter: blur(15px);
+}
+
+/* DASHBOARD HEADING */
+.app .dashboard-heading h2,
+.app .dashboard-heading p {
+    color: #ffffff;
+}
+
+.app .dashboard-eyebrow {
+    color: #b9f5cf;
+}
+
+/* GLASS STAT CARDS */
+.app #pageContent .stat-card,
+.app .dashboard-stats .stat-card {
+    background: rgba(255,255,255,0.16) !important;
+    border: 1px solid rgba(255,255,255,0.35) !important;
+    border-radius: 20px !important;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow:
+        0 8px 32px rgba(0,0,0,0.12),
+        inset 0 1px 0 rgba(255,255,255,0.25);
+}
+
+.app .stat-card p,
+.app .stat-card small,
+.app .stat-card > span {
+    color: #f0fff4 !important;
+}
+
+.app .stat-card h2 {
+    color: #ffffff !important;
+}
+
+.app .stat-icon {
+    background: rgba(220,255,230,0.22);
+    border: 1px solid rgba(255,255,255,0.25);
+}
+
+/* GLASS WELCOME BANNER */
+.app .dashboard-welcome {
+    background: rgba(225,255,235,0.17) !important;
+    border: 1px solid rgba(255,255,255,0.35) !important;
+    border-radius: 22px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 10px 35px rgba(0,0,0,0.12);
+}
+
+.app .welcome-content h2,
+.app .welcome-content p {
+    color: #ffffff !important;
+}
+
+.app .dashboard-welcome .dashboard-eyebrow {
+    color: #c5f5d3;
+}
+
+.app .welcome-decoration {
+    background: rgba(255,255,255,0.16);
+    border: 1px solid rgba(255,255,255,0.3);
+    backdrop-filter: blur(15px);
+}
+
+/* ALL FUNCTION PANELS */
+.app #pageContent .panel {
+    background: rgba(255,255,255,0.17) !important;
+    border: 1px solid rgba(255,255,255,0.35) !important;
+    border-radius: 18px;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow:
+        0 8px 32px rgba(0,0,0,0.12),
+        inset 0 1px 0 rgba(255,255,255,0.20);
+}
+
+.app #pageContent .panel h3,
+.app #pageContent .panel p,
+.app #pageContent .section-title {
+    color: #ffffff;
+}
+
+/* TABLE GLASS */
+.app .table-wrap {
+    background: rgba(255,255,255,0.13) !important;
+    border: 1px solid rgba(255,255,255,0.30) !important;
+    border-radius: 16px;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+.app table {
+    background: transparent;
+}
+
+.app th {
+    background: rgba(255,255,255,0.19) !important;
+    color: #ffffff !important;
+    border-bottom: 1px solid rgba(255,255,255,0.22);
+}
+
+.app td {
+    background: rgba(255,255,255,0.07);
+    color: #ffffff !important;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+
+.app tbody tr:hover td {
+    background: rgba(255,255,255,0.19);
+}
+
+/* TOOLBAR */
+.app .toolbar input,
+.app .toolbar select,
+.app .field input,
+.app .field select,
+.app .field textarea {
+    background: rgba(255,255,255,0.18);
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.35);
+    backdrop-filter: blur(12px);
+}
+
+.app .toolbar input::placeholder,
+.app .field input::placeholder,
+.app .field textarea::placeholder {
+    color: rgba(255,255,255,0.72);
+}
+
+.app .toolbar select option,
+.app .field select option {
+    color: #1d3025;
+    background: #ffffff;
+}
+
+.app .field label {
+    color: #ffffff;
+}
+
+/* BUTTONS */
+.app #pageContent .btn-primary {
+    background: rgba(18,107,72,0.85);
+    border: 1px solid rgba(255,255,255,0.35);
+    color: #ffffff;
+    backdrop-filter: blur(12px);
+}
+
+.app #pageContent .btn-secondary {
+    background: rgba(255,255,255,0.20);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #ffffff;
+}
+
+.app #pageContent .btn-danger {
+    background: rgba(193,75,67,0.75);
+    color: #ffffff;
+}
+
+/* BADGES */
+.app .badge {
+    background: rgba(190,255,210,0.22);
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.20);
+}
+
+/* EMPTY STATE AND FOOTER */
+.app .empty-state,
+.app footer {
+    color: rgba(255,255,255,0.8);
+}
+
+/* RESPONSIVE */
+@media (max-width: 800px) {
+    .app .main-content {
+        background-attachment: scroll !important;
+    }
+}
+
+/* SIDEBAR - CLEAR GLASS EFFECT */
+
+.app {
+    background-image: url("https://images.unsplash.com/photo-1448375240586-882707db888b");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+
+.app .sidebar {
+    background: rgba(10, 65, 47, 0.48) !important;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-right: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.12);
+}
+
+/* Sidebar text */
+.sidebar,
+.sidebar .brand,
+.sidebar .nav-link,
+.sidebar .user-info {
+    color: #f2fff8;
+}
+
+/* Navigation hover */
+.sidebar .nav-link:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(10px);
+}
+
+/* Active navigation */
+.sidebar .nav-link.active {
+    background: rgba(225, 255, 238, 0.78) !important;
+    color: #08734d !important;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(12px);
+}
+
+/* Sidebar bottom profile area */
+.sidebar .user-profile,
+.sidebar .sidebar-footer {
+    background: transparent !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ===== GLASS MODAL / POPUP FORMS ===== */
+
+.modal-backdrop {
+    background: rgba(3, 20, 14, 0.38) !important;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+.modal {
+    background: rgba(225, 245, 234, 0.16) !important;
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.25);
+    color: #ffffff !important;
+    border-radius: 24px;
+}
+
+/* Modal headings and labels */
+.modal h1,
+.modal h2,
+.modal h3,
+.modal label {
+    color: #ffffff !important;
+}
+
+/* Input fields */
+.modal input,
+.modal select,
+.modal textarea {
+    background: rgba(255, 255, 255, 0.14) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    color: #ffffff !important;
+    border-radius: 12px;
+}
+
+/* Placeholder */
+.modal input::placeholder,
+.modal textarea::placeholder {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Select options */
+.modal select option {
+    background: #164936;
+    color: #ffffff;
+}
+
+/* Close button */
+.modal .close-btn,
+.modal button.close {
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+/* Buttons */
+.modal .btn-secondary {
+    background: rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.modal .btn-primary {
+    background: rgba(12, 112, 76, 0.85) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ===== SALES RECEIPT TABLE - GREEN GLASS ===== */
+
+/* Receipt table container */
+.modal .table-wrap {
+    background: rgba(10, 75, 52, 0.45) !important;
+    border: 1px solid rgba(220, 255, 235, 0.25) !important;
+    border-radius: 14px;
+    overflow-x: auto;
+}
+
+/* Table background */
+.modal table {
+    background: transparent !important;
+    color: #ffffff !important;
+}
+
+/* Table header */
+.modal table thead,
+.modal table thead tr,
+.modal table th {
+    background: rgba(12, 100, 69, 0.75) !important;
+    color: #eafff2 !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Table body */
+.modal table tbody,
+.modal table tbody tr,
+.modal table td {
+    background: rgba(15, 75, 53, 0.35) !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Alternating rows */
+.modal table tbody tr:nth-child(even) td {
+    background: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* Hover */
+.modal table tbody tr:hover td {
+    background: rgba(100, 220, 160, 0.16) !important;
+}
+
+/* Receipt total */
+.modal .total,
+.modal .receipt-total {
+    color: #ffffff !important;
+}
+
+/* Horizontal scrollbar */
+.modal .table-wrap::-webkit-scrollbar {
+    height: 8px;
+}
+
+.modal .table-wrap::-webkit-scrollbar-thumb {
+    background: rgba(200, 255, 220, 0.45);
+    border-radius: 10px;
+}
+
+/* ===== SALES PAGE SPACING ===== */
+
+/* Space between form fields */
+#pageContent .field {
+    margin-bottom: 18px;
+}
+
+/* Add space around Add to Sale button */
+#pageContent .btn {
+    margin-top: 8px;
+    margin-bottom: 16px;
+}
+
+/* Space before and after product table */
+#pageContent .table-wrap {
+    margin-top: 16px;
+    margin-bottom: 24px;
+}
+
+/* Space between table and payment method */
+#pageContent .table-wrap + .field {
+    margin-top: 24px;
+}
+
+/* General spacing for toolbars */
+#pageContent .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+/* Total Amount - White Text */
+#pageContent .stat-card h2,
+#pageContent .stat-card h3,
+#pageContent .stat-card .stat-value,
+#pageContent .stat-card .amount,
+#pageContent .total-amount {
+    color: #ffffff !important;
+}
+
+/* Dropdown - Green Glass Theme */
+#pageContent select,
+.modal select {
+    background: rgba(20, 100, 70, 0.35) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255,255,255,0.35) !important;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+}
+
+#pageContent select option,
+.modal select option {
+    background-color: #164936 !important;
+    color: #ffffff !important;
+}
+
+/* Darker Green Glass Table */
+#pageContent .table-wrap {
+    background: rgba(20, 75, 55, 0.42) !important;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.22) !important;
+}
+
+#pageContent table th {
+    background: rgba(20, 85, 60, 0.55) !important;
+    color: #ffffff !important;
+}
+
+#pageContent table td {
+    background: rgba(20, 75, 55, 0.28) !important;
+    color: #ffffff !important;
+}
+
+#pageContent table tbody tr:hover td {
+    background: rgba(40, 120, 80, 0.45) !important;
 }
