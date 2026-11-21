@@ -48,13 +48,25 @@
                 >
 
                 <label for="loginPassword">Password</label>
-                <input
-                    id="loginPassword"
-                    name="password"
-                    type="password"
-                    autocomplete="current-password"
-                    required
-                >
+
+<div class="password-wrapper">
+    <input
+        id="loginPassword"
+        name="password"
+        type="password"
+        autocomplete="current-password"
+        required
+    >
+
+    <button
+        type="button"
+        id="toggleLoginPassword"
+        class="toggle-password"
+        aria-label="Show password"
+    >
+        👁
+    </button>
+</div>
 
                 <button class="btn btn-primary full" type="submit">
                     Login
@@ -98,14 +110,55 @@
                 >
 
                 <label for="registerPassword">Password (at least 8 characters)</label>
-                <input
-                    id="registerPassword"
-                    name="password"
-                    type="password"
-                    autocomplete="new-password"
-                    minlength="8"
-                    required
-                >
+
+<div class="password-wrapper">
+    <input
+        id="registerPassword"
+        name="password"
+        type="password"
+        autocomplete="new-password"
+        minlength="8"
+        required
+    >
+
+    <button
+        type="button"
+        id="toggleRegisterPassword"
+        class="toggle-password"
+        aria-label="Show password"
+    >
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/>
+            <circle cx="12" cy="12" r="3"/>
+        </svg>
+    </button>
+</div>
+
+<label for="confirmPassword">Confirm Password</label>
+
+<div class="password-wrapper">
+    <input
+        id="confirmPassword"
+        name="confirmPassword"
+        type="password"
+        autocomplete="new-password"
+        placeholder="Re-enter your password"
+        required
+    >
+
+    <button
+        type="button"
+        id="toggleConfirmPassword"
+        class="toggle-password"
+        aria-label="Show confirm password"
+    >
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/>
+            <circle cx="12" cy="12" r="3"/>
+        </svg>
+    </button>
+</div>
+
 
                 <button class="btn btn-primary full" type="submit">
                     Create account
@@ -157,12 +210,12 @@
                     💳 <span>Sales</span>
                 </button>
 
-                <button class="nav-link" data-page="purchases">
-                    🧾 <span>Purchases</span>
-                </button>
-
                 <button class="nav-link" data-page="suppliers">
                     🚚 <span>Suppliers</span>
+                </button>
+
+                <button class="nav-link" data-page="purchases">
+                    🧾 <span>Purchases</span>
                 </button>
 
                 <button class="nav-link" data-page="notifications">
