@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
     full_name VARCHAR(120) NOT NULL,
     username VARCHAR(60) NOT NULL UNIQUE,
     email VARCHAR(150) NOT NULL UNIQUE,
-    password_has h VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
     role ENUM('Admin', 'Shop Owner', 'Staff')
         NOT NULL DEFAULT 'Staff',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

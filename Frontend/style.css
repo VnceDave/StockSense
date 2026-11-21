@@ -672,7 +672,7 @@ tbody tr:last-child td {
     transform: translateY(8px);
     transition: .2s;
     pointer-events: none;
-    z-index: 30;
+    z-index: 99999 !important;
     font-size: 13px;
     max-width: calc(100% - 40px);
 }
