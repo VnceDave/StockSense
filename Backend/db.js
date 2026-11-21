@@ -9,9 +9,9 @@ const db = mysql.createPool({
     password: process.env.DB_PASSWORD || "",
     database: process.env.DB_NAME || "stocksense_db",
 
-    ssl: process.env.DB_SSL === "true"
-        ? { minVersion: "TLSv1.2" }
-        : undefined,
+    ssl: {
+    minVersion: "TLSv1.2"
+},
 
     waitForConnections: true,
     connectionLimit: 10,
