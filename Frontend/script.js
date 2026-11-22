@@ -652,7 +652,7 @@ function openProductModal(product = null) {
                         </div>
 
                         <div class="field">
-                            <label>Selling Price (₱)</label>
+                            <label>Selling Price (₱) Optional </label>
                             <input name="selling_price" type="number" min="0" step="0.01"
                                 value="${Number(product?.selling_price || 0)}" required>
                         </div>
@@ -2630,6 +2630,7 @@ if (loginPassword && toggleLoginPassword) {
         const isHidden = loginPassword.type === "password";
 
         loginPassword.type = isHidden ? "text" : "password";
+        console.log("Password type:", loginPassword.type);
 
         toggleLoginPassword.innerHTML = isHidden
             ? '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l18 18"/><path d="M10.6 10.6a2 2 0 002.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0121 12a11 11 0 01-3 4.5"/><path d="M6.2 6.2A11 11 0 003 12a11 11 0 0018 0"/></svg>'

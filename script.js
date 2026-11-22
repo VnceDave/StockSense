@@ -182,8 +182,11 @@ function showAuth(tab = "login") {
 }
 
 function closeAuth() {
+    const publicWebsite = document.getElementById("publicWebsite");
+
     setHidden(authScreen, true);
     setHidden(publicWebsite, false);
+    setHidden(app, true);
 }
 
 
@@ -652,7 +655,7 @@ function openProductModal(product = null) {
                         </div>
 
                         <div class="field">
-                            <label>Selling Price (₱)</label>
+                            <label>Selling Price (₱) Optional </label>
                             <input name="selling_price" type="number" min="0" step="0.01"
                                 value="${Number(product?.selling_price || 0)}" required>
                         </div>
@@ -2611,7 +2614,13 @@ async function loadNotifications() {
         `;
     }
 }
+function showPublicWebsite() {
+    const publicWebsite = document.getElementById("publicWebsite");
 
+    setHidden(publicWebsite, false);
+    setHidden(authScreen, true);
+    setHidden(app, true);
+}
 // ==============================
 // RESTORE SESSION
 // ==============================
@@ -2621,33 +2630,19 @@ if (authToken && currentUser) {
 } else {
     showPublicWebsite();
 }
-// Show / Hide Login Password
-const loginPassword = document.getElementById("loginPassword");
-const toggleLoginPassword = document.getElementById("toggleLoginPassword");
 
-if (loginPassword && toggleLoginPassword) {
-    toggleLoginPassword.addEventListener("click", function () {
-        const isHidden = loginPassword.type === "password";
-
-        loginPassword.type = isHidden ? "text" : "password";
-
-        toggleLoginPassword.innerHTML = isHidden
-            ? '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l18 18"/><path d="M10.6 10.6a2 2 0 002.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0121 12a11 11 0 01-3 4.5"/><path d="M6.2 6.2A11 11 0 003 12a11 11 0 0018 0"/></svg>'
-            : '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
-
-        toggleLoginPassword.setAttribute(
-            "aria-label",
-            isHidden ? "Hide password" : "Show password"
-        );
-    });
-}
 
 // Show / Hide Register Password
+
+// Show / Hide Password - Login and Register
 function setupPasswordToggle(inputId, buttonId) {
     const passwordInput = document.getElementById(inputId);
     const toggleButton = document.getElementById(buttonId);
 
-    if (!passwordInput || !toggleButton) return;
+    if (!passwordInput || !toggleButton) {
+    console.log("Password toggle not found:", inputId, buttonId);
+    return;
+}
 
     toggleButton.addEventListener("click", function () {
         const isHidden = passwordInput.type === "password";
@@ -2673,8 +2668,11 @@ function setupPasswordToggle(inputId, buttonId) {
     });
 }
 
+
+setupPasswordToggle("loginPassword", "toggleLoginPassword");
 setupPasswordToggle("registerPassword", "toggleRegisterPassword");
 setupPasswordToggle("confirmPassword", "toggleConfirmPassword");
+
 
 
 // Validate Register Password and Confirm Password
