@@ -598,7 +598,11 @@ async function loadInventory() {
                     <td>${escapeHTML(item.unit || "piece")}</td>
                     <td>${formatCurrency(item.cost_price)}</td>
                     <td>${formatCurrency(item.selling_price)}</td>
-                    <td><span class="badge">${status}</span></td>
+                    <td>
+    <span class="badge ${status === "Low Stock" ? "low-stock" : "in-stock"}">
+        ${status}
+    </span>
+</td>
                 </tr>
             `;
         }).join("");
@@ -2593,9 +2597,7 @@ function renderSettings() {
                         required
                     >
 
-                    <button type="submit" class="btn-primary">
-                        Request Password Change
-                    </button>
+                    
                 </form>
                
             </div>
