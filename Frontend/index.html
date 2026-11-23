@@ -237,6 +237,11 @@
         id="toggleLoginPassword"
         class="toggle-password"
         aria-label="Show password"
+        onclick="
+            const input = document.getElementById('loginPassword');
+            input.type = input.type === 'password' ? 'text' : 'password';
+            this.setAttribute('aria-label', input.type === 'text' ? 'Hide password' : 'Show password');
+        "
     >
         👁
     </button>

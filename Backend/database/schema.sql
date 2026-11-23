@@ -8,7 +8,7 @@ CREATE DATABASE IF NOT EXISTS stocksense_db;
 USE stocksense_db;
 
 -- ==========================================
--- 1. USERS
+-- 1. USERS-
 -- ==========================================
 
 CREATE TABLE IF NOT EXISTS users (

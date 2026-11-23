@@ -4,13 +4,17 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const crypto = require("crypto");
 
 const db = require("./db");
 const recordLogin = require("./loginHistory");
+const { Resend } = require("resend");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET;
+const resend = new Resend(process.env.RESEND_API_KEY);
+const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
 
 app.use(cors());
 app.use(express.json());
@@ -58,6 +62,7 @@ function validId(value) {
     return Number.isInteger(Number(value)) && Number(value) > 0;
 }
 
+
 function validateProduct(data) {
     if (!data.product_name || !String(data.product_name).trim()) {
         return "Product name is required.";
@@ -70,7 +75,7 @@ function validateProduct(data) {
     if (
         !Number.isFinite(cost) ||
         !Number.isFinite(selling) ||
-        !Number.isInteger(reorder) ||
+        !Number.isFinite(reorder) ||
         cost < 0 ||
         selling < 0 ||
         reorder < 0
@@ -81,8 +86,8 @@ function validateProduct(data) {
     if (data.quantity !== undefined) {
         const quantity = Number(data.quantity);
 
-        if (!Number.isInteger(quantity) || quantity < 0) {
-            return "Quantity must be a non-negative whole number.";
+        if (!Number.isFinite(quantity) || quantity < 0) {
+            return "Quantity must be a valid non-negative number.";
         }
     }
 
@@ -326,6 +331,95 @@ app.post("/api/login", async (req, res) => {
 // =====================================
 
 app.use("/api", authenticateToken);
+
+
+// =====================================
+// CHANGE PASSWORD
+// =====================================
+
+app.post("/api/password/request", async (req, res) => {
+    try {
+        const { currentPassword, newPassword, confirmPassword } = req.body;
+        const userId = req.user.user_id;
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "Please complete all password fields."
+            });
+        }
+
+        if (newPassword.length < 8) {
+            return res.status(400).json({
+                success: false,
+                message: "New password must be at least 8 characters."
+            });
+        }
+
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "New passwords do not match."
+            });
+        }
+
+        const [users] = await db.execute(
+            `SELECT password_hash
+             FROM users
+             WHERE user_id = ?
+             LIMIT 1`,
+            [userId]
+        );
+
+        if (!users.length) {
+            return res.status(404).json({
+                success: false,
+                message: "User account not found."
+            });
+        }
+
+        const isCorrect = await bcrypt.compare(
+            currentPassword,
+            users[0].password_hash
+        );
+
+        if (!isCorrect) {
+            return res.status(401).json({
+                success: false,
+                message: "Current password is incorrect."
+            });
+        }
+
+        if (await bcrypt.compare(newPassword, users[0].password_hash)) {
+            return res.status(400).json({
+                success: false,
+                message: "New password must be different from your current password."
+            });
+        }
+
+        const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+        await db.execute(
+            `UPDATE users
+             SET password_hash = ?
+             WHERE user_id = ?`,
+            [newPasswordHash, userId]
+        );
+
+        return res.json({
+            success: true,
+            message: "Password changed successfully!"
+        });
+
+    } catch (error) {
+        console.error("Change password error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Unable to change password. Please try again."
+        });
+    }
+});
 
 // =====================================
 // INVENTORY
@@ -1094,7 +1188,7 @@ app.post("/api/sales", async (req, res) => {
 
         if (
             !validId(productId) ||
-            !Number.isInteger(quantity) ||
+            !Number.isFinite(quantity) ||
             quantity <= 0
         ) {
             return res.status(400).json({
@@ -1584,7 +1678,7 @@ console.log("EXPIRY TYPE:", typeof item.expiry_date);
 
         if (
             !validId(productId) ||
-            !Number.isInteger(quantity) ||
+            !Number.isFinite(quantity) ||
             quantity <= 0 ||
             !Number.isFinite(unitCost) ||
             unitCost < 0

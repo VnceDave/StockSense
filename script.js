@@ -182,8 +182,11 @@ function showAuth(tab = "login") {
 }
 
 function closeAuth() {
+    const publicWebsite = document.getElementById("publicWebsite");
+
     setHidden(authScreen, true);
     setHidden(publicWebsite, false);
+    setHidden(app, true);
 }
 
 
@@ -357,7 +360,9 @@ const pageNames = {
     sales: "Sales",
     purchases: "Purchases",
     suppliers: "Suppliers",
-    notifications: "Notifications"
+    notifications: "Notifications",
+    settings: "Settings"
+
 };
 
 function showPage(page) {
@@ -399,6 +404,10 @@ function showPage(page) {
         case "notifications":
             loadNotifications();
             break;
+
+        case "settings":
+    renderSettings();
+    break;
 
         default:
             renderComingSoon(page);
@@ -652,7 +661,7 @@ function openProductModal(product = null) {
                         </div>
 
                         <div class="field">
-                            <label>Selling Price (₱)</label>
+                            <label>Selling Price (₱) Optional </label>
                             <input name="selling_price" type="number" min="0" step="0.01"
                                 value="${Number(product?.selling_price || 0)}" required>
                         </div>
@@ -660,14 +669,14 @@ function openProductModal(product = null) {
                         ${editing ? "" : `
                             <div class="field">
                                 <label>Initial Quantity</label>
-                                <input name="quantity" type="number" min="0" step="1" value="0" required>
+                                <input name="quantity" type="number" min="0" step="0.01" value="0" required>
                             </div>
                         `}
 
                         <div class="field">
                             <label>Reorder Level</label>
-                            <input name="reorder_level" type="number" min="0" step="1"
-                                value="${Number(product?.reorder_level ?? 10)}" required>
+                            <input name="reorder_level" type="number" min="0" step="0.01"
+                            value="${Number(product?.reorder_level ?? 10)}" required>
                         </div>
 
                         <div class="field">
@@ -969,7 +978,7 @@ async function renderSales() {
 
                 <div class="field">
                     <label for="saleQuantity">Quantity</label>
-                    <input id="saleQuantity" type="number" min="1" step="1" value="1">
+                    <input id="saleQuantity" type="number" min="0.01" step="0.01" value="1">
                 </div>
 
                 <div class="field">
@@ -1155,7 +1164,7 @@ function addSaleItem() {
         return;
     }
 
-    if (!Number.isInteger(quantity) || quantity < 1) {
+    if (!Number.isFinite(quantity) || quantity <= 0) {
         showToast("Please enter a valid quantity.");
         return;
     }
@@ -2110,7 +2119,7 @@ async function openPurchaseModal() {
                             <div class="field">
                                 <label>Quantity *</label>
                                 <input id="purchaseQuantity" type="number"
-                                    min="1" step="1" value="1">
+                                    min="0.01" step="0.01" value="1">
                             </div>
 
                             <div class="field">
@@ -2210,7 +2219,7 @@ console.log("Selected Expiry Date:", expiryDate);
         return;
     }
 
-    if (!Number.isInteger(quantity) || quantity < 1) {
+    if (!Number.isFinite(quantity) || quantity <= 0) {
         showToast("Please enter a valid quantity.");
         return;
     }
@@ -2549,6 +2558,83 @@ async function cancelPurchase(id) {
 // OTHER MODULES
 // ==============================
 
+function renderSettings() {
+    pageContent.innerHTML = `
+        <section class="panel">
+            <h3>Settings</h3>
+            <p>Manage your account settings and security.</p>
+
+            <div class="settings-section">
+                <h3>Account Security</h3>
+                <p>Change your account password securely.</p>
+
+                <form id="changePasswordForm">
+                    <label>Current Password</label>
+                    <input
+                        type="password"
+                        id="currentPassword"
+                        placeholder="Enter current password"
+                        required
+                    >
+
+                    <label>New Password</label>
+                    <input
+                        type="password"
+                        id="newPassword"
+                        placeholder="Enter new password"
+                        required
+                    >
+
+                    <label>Confirm New Password</label>
+                    <input
+                        type="password"
+                        id="confirmNewPassword"
+                        placeholder="Confirm new password"
+                        required
+                    >
+
+                    <button type="submit" class="btn-primary">
+                        Request Password Change
+                    </button>
+                </form>
+               
+            </div>
+        </section>
+    `;
+        // PASSWORD CHANGE REQUEST
+    const changePasswordForm = document.getElementById("changePasswordForm");
+    
+
+    changePasswordForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const currentPassword = document.getElementById("currentPassword").value;
+        const newPassword = document.getElementById("newPassword").value;
+        const confirmPassword = document.getElementById("confirmNewPassword").value;
+
+        try {
+            const result = await apiRequest("/password/request", {
+                method: "POST",
+                body: JSON.stringify({
+                    currentPassword,
+                    newPassword,
+                    confirmPassword
+                })
+            });
+
+            showToast(result.message);
+
+            changePasswordForm.reset();
+
+        } catch (error) {
+            showToast(error.message);
+        }
+    });
+    
+}
+
+
+
 function renderComingSoon(page) {
     pageContent.innerHTML = `
         <section class="panel">
@@ -2611,7 +2697,13 @@ async function loadNotifications() {
         `;
     }
 }
+function showPublicWebsite() {
+    const publicWebsite = document.getElementById("publicWebsite");
 
+    setHidden(publicWebsite, false);
+    setHidden(authScreen, true);
+    setHidden(app, true);
+}
 // ==============================
 // RESTORE SESSION
 // ==============================
@@ -2621,33 +2713,19 @@ if (authToken && currentUser) {
 } else {
     showPublicWebsite();
 }
-// Show / Hide Login Password
-const loginPassword = document.getElementById("loginPassword");
-const toggleLoginPassword = document.getElementById("toggleLoginPassword");
 
-if (loginPassword && toggleLoginPassword) {
-    toggleLoginPassword.addEventListener("click", function () {
-        const isHidden = loginPassword.type === "password";
-
-        loginPassword.type = isHidden ? "text" : "password";
-
-        toggleLoginPassword.innerHTML = isHidden
-            ? '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l18 18"/><path d="M10.6 10.6a2 2 0 002.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0121 12a11 11 0 01-3 4.5"/><path d="M6.2 6.2A11 11 0 003 12a11 11 0 0018 0"/></svg>'
-            : '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
-
-        toggleLoginPassword.setAttribute(
-            "aria-label",
-            isHidden ? "Hide password" : "Show password"
-        );
-    });
-}
 
 // Show / Hide Register Password
+
+// Show / Hide Password - Login and Register
 function setupPasswordToggle(inputId, buttonId) {
     const passwordInput = document.getElementById(inputId);
     const toggleButton = document.getElementById(buttonId);
 
-    if (!passwordInput || !toggleButton) return;
+    if (!passwordInput || !toggleButton) {
+    console.log("Password toggle not found:", inputId, buttonId);
+    return;
+}
 
     toggleButton.addEventListener("click", function () {
         const isHidden = passwordInput.type === "password";
@@ -2673,8 +2751,11 @@ function setupPasswordToggle(inputId, buttonId) {
     });
 }
 
+
+setupPasswordToggle("loginPassword", "toggleLoginPassword");
 setupPasswordToggle("registerPassword", "toggleRegisterPassword");
 setupPasswordToggle("confirmPassword", "toggleConfirmPassword");
+
 
 
 // Validate Register Password and Confirm Password
