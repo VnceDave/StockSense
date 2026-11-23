@@ -360,7 +360,9 @@ const pageNames = {
     sales: "Sales",
     purchases: "Purchases",
     suppliers: "Suppliers",
-    notifications: "Notifications"
+    notifications: "Notifications",
+    settings: "Settings"
+
 };
 
 function showPage(page) {
@@ -402,6 +404,10 @@ function showPage(page) {
         case "notifications":
             loadNotifications();
             break;
+
+        case "settings":
+    renderSettings();
+    break;
 
         default:
             renderComingSoon(page);
@@ -663,14 +669,14 @@ function openProductModal(product = null) {
                         ${editing ? "" : `
                             <div class="field">
                                 <label>Initial Quantity</label>
-                                <input name="quantity" type="number" min="0" step="1" value="0" required>
+                                <input name="quantity" type="number" min="0" step="0.01" value="0" required>
                             </div>
                         `}
 
                         <div class="field">
                             <label>Reorder Level</label>
-                            <input name="reorder_level" type="number" min="0" step="1"
-                                value="${Number(product?.reorder_level ?? 10)}" required>
+                            <input name="reorder_level" type="number" min="0" step="0.01"
+                            value="${Number(product?.reorder_level ?? 10)}" required>
                         </div>
 
                         <div class="field">
@@ -972,7 +978,7 @@ async function renderSales() {
 
                 <div class="field">
                     <label for="saleQuantity">Quantity</label>
-                    <input id="saleQuantity" type="number" min="1" step="1" value="1">
+                    <input id="saleQuantity" type="number" min="0.01" step="0.01" value="1">
                 </div>
 
                 <div class="field">
@@ -1158,7 +1164,7 @@ function addSaleItem() {
         return;
     }
 
-    if (!Number.isInteger(quantity) || quantity < 1) {
+    if (!Number.isFinite(quantity) || quantity <= 0) {
         showToast("Please enter a valid quantity.");
         return;
     }
@@ -2113,7 +2119,7 @@ async function openPurchaseModal() {
                             <div class="field">
                                 <label>Quantity *</label>
                                 <input id="purchaseQuantity" type="number"
-                                    min="1" step="1" value="1">
+                                    min="0.01" step="0.01" value="1">
                             </div>
 
                             <div class="field">
@@ -2213,7 +2219,7 @@ console.log("Selected Expiry Date:", expiryDate);
         return;
     }
 
-    if (!Number.isInteger(quantity) || quantity < 1) {
+    if (!Number.isFinite(quantity) || quantity <= 0) {
         showToast("Please enter a valid quantity.");
         return;
     }
@@ -2551,6 +2557,83 @@ async function cancelPurchase(id) {
 // ==============================
 // OTHER MODULES
 // ==============================
+
+function renderSettings() {
+    pageContent.innerHTML = `
+        <section class="panel">
+            <h3>Settings</h3>
+            <p>Manage your account settings and security.</p>
+
+            <div class="settings-section">
+                <h3>Account Security</h3>
+                <p>Change your account password securely.</p>
+
+                <form id="changePasswordForm">
+                    <label>Current Password</label>
+                    <input
+                        type="password"
+                        id="currentPassword"
+                        placeholder="Enter current password"
+                        required
+                    >
+
+                    <label>New Password</label>
+                    <input
+                        type="password"
+                        id="newPassword"
+                        placeholder="Enter new password"
+                        required
+                    >
+
+                    <label>Confirm New Password</label>
+                    <input
+                        type="password"
+                        id="confirmNewPassword"
+                        placeholder="Confirm new password"
+                        required
+                    >
+
+                    <button type="submit" class="btn-primary">
+                        Request Password Change
+                    </button>
+                </form>
+               
+            </div>
+        </section>
+    `;
+        // PASSWORD CHANGE REQUEST
+    const changePasswordForm = document.getElementById("changePasswordForm");
+    
+
+    changePasswordForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const currentPassword = document.getElementById("currentPassword").value;
+        const newPassword = document.getElementById("newPassword").value;
+        const confirmPassword = document.getElementById("confirmNewPassword").value;
+
+        try {
+            const result = await apiRequest("/password/request", {
+                method: "POST",
+                body: JSON.stringify({
+                    currentPassword,
+                    newPassword,
+                    confirmPassword
+                })
+            });
+
+            showToast(result.message);
+
+            changePasswordForm.reset();
+
+        } catch (error) {
+            showToast(error.message);
+        }
+    });
+    
+}
+
+
 
 function renderComingSoon(page) {
     pageContent.innerHTML = `
