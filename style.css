@@ -2982,3 +2982,272 @@ header,
         z-index: 10 !important;
     }
 }
+/* ===== NOTIFICATIONS PAGE ===== */
+
+.notification-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.notification-list .notification-item {
+    padding: 18px 20px;
+    border-radius: 12px;
+    background: rgba(15, 65, 48, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-left: 4px solid #55c879;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: 0.2s ease;
+}
+
+.notification-list .notification-item:hover {
+    background: rgba(25, 85, 60, 0.7);
+    transform: translateY(-2px);
+}
+
+.notification-item strong {
+    display: block;
+    color: #ffffff !important;
+    font-size: 15px;
+    margin-bottom: 6px;
+}
+
+.notification-item p {
+    color: rgba(255, 255, 255, 0.85) !important;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+#pageContent > .panel:has(.notification-list) {
+    background: rgba(180, 220, 195, 0.25) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-radius: 16px;
+    padding: 24px;
+}
+
+#pageContent > .panel:has(.notification-list) h3 {
+    color: #ffffff;
+    font-size: 18px;
+    margin-bottom: 16px;
+}
+
+/* IN STOCK */
+#pageContent .badge:not(.warning):not(.danger) {
+    background: rgba(46, 204, 113, 0.18) !important;
+    color: #72f5a0 !important;
+    border: 1px solid rgba(46, 204, 113, 0.45) !important;
+    border-radius: 20px;
+    padding: 7px 12px;
+    font-weight: 700;
+}
+
+/* LOW STOCK */
+#pageContent .badge.warning,
+#pageContent .badge.danger {
+    background: rgba(231, 76, 60, 0.18) !important;
+    color: #ff7777 !important;
+    border: 1px solid rgba(231, 76, 60, 0.5) !important;
+    border-radius: 20px;
+    padding: 7px 12px;
+    font-weight: 700;
+}
+/* IN STOCK - GREEN */
+#inventoryTableBody .badge.in-stock {
+    background: rgba(46, 204, 113, 0.18) !important;
+    color: #72f5a0 !important;
+    border: 1px solid #27ae60 !important;
+}
+
+/* LOW STOCK - RED */
+#inventoryTableBody .badge.low-stock {
+    background: rgba(231, 76, 60, 0.18) !important;
+    color: #ff7777 !important;
+    border: 1px solid #e74c3c !important;
+}
+
+
+/* ===== SETTINGS PAGE DESIGN ===== */
+
+#pageContent > .panel:has(#changePasswordForm) {
+    padding: 28px;
+    background: rgba(190, 220, 205, 0.20);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 18px;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+/* Main Settings Heading */
+#pageContent > .panel:has(#changePasswordForm) > h3 {
+    color: #ffffff;
+    font-size: 22px;
+    margin-bottom: 8px;
+}
+
+#pageContent > .panel:has(#changePasswordForm) > p {
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 25px;
+}
+
+/* Account Security Card */
+.settings-section {
+    padding: 25px;
+    background: rgba(8, 48, 36, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 14px;
+}
+
+.settings-section h3 {
+    color: #ffffff;
+    font-size: 18px;
+    margin-bottom: 8px;
+}
+
+.settings-section p {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 14px;
+    margin-bottom: 22px;
+}
+
+/* Password Form Layout */
+#changePasswordForm {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px 16px;
+    align-items: end;
+}
+
+/* Labels */
+#changePasswordForm label:nth-of-type(1) {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+#changePasswordForm label:nth-of-type(2) {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+#changePasswordForm label:nth-of-type(3) {
+    grid-column: 3;
+    grid-row: 1;
+}
+
+#changePasswordForm label {
+    color: #e8f5ed;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Password Inputs */
+#changePasswordForm input {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 9px;
+    color: #183b2d;
+    font-size: 13px;
+    outline: none;
+    transition: 0.2s ease;
+}
+
+#currentPassword {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+#newPassword {
+    grid-column: 2;
+    grid-row: 2;
+}
+
+#confirmNewPassword {
+    grid-column: 3;
+    grid-row: 2;
+}
+
+#changePasswordForm input:focus {
+    border-color: #65d99a;
+    box-shadow: 0 0 0 3px rgba(72, 187, 120, 0.18);
+}
+
+/* Submit Button */
+#changePasswordForm button {
+    grid-column: 1 / -1;
+    margin-top: 12px;
+    padding: 13px 20px;
+    border: none;
+    border-radius: 9px;
+    background: #187a52;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+#changePasswordForm button:hover {
+    background: #209866;
+    transform: translateY(-1px);
+}
+
+/* Responsive */
+@media (max-width: 850px) {
+    #changePasswordForm {
+        grid-template-columns: 1fr;
+    }
+
+    #changePasswordForm label,
+    #changePasswordForm input {
+        grid-column: 1 !important;
+        grid-row: auto !important;
+    }
+
+    #changePasswordForm button {
+        grid-column: 1;
+    }
+}
+#changePasswordForm button {
+    display: none !important;
+}
+
+
+/* FEATURES GRID */
+.public-features .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+    max-width: 1150px;
+    margin: auto;
+    align-items: stretch;
+}
+
+.public-features .feature-card {
+    min-height: 230px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.public-features .feature-card p {
+    line-height: 1.7;
+}
+
+@media (max-width: 900px) {
+    .public-features .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .public-features .features-grid {
+        grid-template-columns: 1fr;
+    }
+}
