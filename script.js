@@ -2562,57 +2562,264 @@ async function cancelPurchase(id) {
 // OTHER MODULES
 // ==============================
 
+
 function renderSettings() {
     pageContent.innerHTML = `
-        <section class="panel">
-            <h3>Settings</h3>
-            <p>Manage your account settings and security.</p>
+        <div class="settings-page">
+            <div class="settings-heading">
+                <h2>Settings</h2>
+                <p>Manage your account, business information, and security.</p>
+            </div>
 
-            <div class="settings-section">
-                <h3>Account Security</h3>
-                <p>Change your account password securely.</p>
+            <!-- ACCOUNT SETTINGS -->
+            <section class="panel settings-section">
+                <h3>Account Settings</h3>
+                <p>Manage your personal account information.</p>
+
+                <form id="profileSettingsForm">
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="settingsFullName">Full Name</label>
+                            <input
+                                id="settingsFullName"
+                                type="text"
+                                value="${escapeHTML(currentUser?.full_name || currentUser?.name || "")}"
+                                placeholder="Enter your full name"
+                            >
+                        </div>
+
+                        <div class="field">
+                            <label for="settingsEmail">Email Address</label>
+                            <input
+                                id="settingsEmail"
+                                type="email"
+                                value="${escapeHTML(currentUser?.email || "")}"
+                                placeholder="Enter your email"
+                            >
+                        </div>
+
+                        <div class="field full-field">
+                            <label for="settingsUsername">Username</label>
+                            <input
+                                id="settingsUsername"
+                                type="text"
+                                value="${escapeHTML(currentUser?.username || "")}"
+                                placeholder="Enter your username"
+                            >
+                        </div>
+                    </div>
+
+                    <<button type="submit" class="btn btn-primary">
+                        Save Profile
+                    </button>
+                </form>
+            </section>
+
+            <!-- BUSINESS INFORMATION -->
+            <section class="panel settings-section">
+                <h3>Business Information</h3>
+                <p>Manage your registered business details.</p>
+
+                <form id="businessSettingsForm">
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="settingsBusinessName">Business Name</label>
+                            <input
+                                id="settingsBusinessName"
+                                type="text"
+                                value="${escapeHTML(currentUser?.business_name || currentUser?.shop_name || "")}"
+                                placeholder="Enter business name"
+                            >
+                        </div>
+
+                        <div class="field">
+                            <label for="settingsBusinessEmail">Business Email</label>
+                            <input
+                                id="settingsBusinessEmail"
+                                type="email"
+                                value="${escapeHTML(currentUser?.business_email || "")}"
+                                placeholder="Enter business email"
+                            >
+                        </div>
+
+                        <div class="field">
+                            <label for="settingsContact">Contact Number</label>
+                            <input
+                                id="settingsContact"
+                                type="tel"
+                                value="${escapeHTML(currentUser?.contact_number || "")}"
+                                placeholder="Enter contact number"
+                            >
+                        </div>
+
+                        <div class="field">
+                            <label for="settingsAddress">Business Address</label>
+                            <input
+                                id="settingsAddress"
+                                type="text"
+                                value="${escapeHTML(currentUser?.business_address || "")}"
+                                placeholder="Enter business address"
+                            >
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        Save Business Information
+                    </button>
+                </form>
+            </section>
+
+            <!-- SECURITY -->
+            <section class="panel settings-section">
+                <h3>Security</h3>
+                <p>Change your password to help protect your account.</p>
 
                 <form id="changePasswordForm">
-                    <label>Current Password</label>
-                    <input
-                        type="password"
-                        id="currentPassword"
-                        placeholder="Enter current password"
-                        required
-                    >
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="currentPassword">Current Password</label>
+                            <input
+                                type="password"
+                                id="currentPassword"
+                                placeholder="Enter current password"
+                                required
+                            >
+                        </div>
 
-                    <label>New Password</label>
-                    <input
-                        type="password"
-                        id="newPassword"
-                        placeholder="Enter new password"
-                        required
-                    >
+                        <div class="field">
+                            <label for="newPassword">New Password</label>
+                            <input
+                                type="password"
+                                id="newPassword"
+                                placeholder="Enter new password"
+                                required
+                            >
+                        </div>
 
-                    <label>Confirm New Password</label>
-                    <input
-                        type="password"
-                        id="confirmNewPassword"
-                        placeholder="Confirm new password"
-                        required
-                    >
+                        <div class="field">
+                            <label for="confirmNewPassword">Confirm New Password</label>
+                            <input
+                                type="password"
+                                id="confirmNewPassword"
+                                placeholder="Confirm new password"
+                                required
+                            >
+                        </div>
+                    </div>
 
-                    
+                    <button type="submit" class="btn btn-primary">
+                        Change Password
+                    </button>
                 </form>
-               
-            </div>
-        </section>
+            </section>
+        </div>
     `;
-        // PASSWORD CHANGE REQUEST
+
     const changePasswordForm = document.getElementById("changePasswordForm");
-    
+
+
+    // SAVE ACCOUNT PROFILE
+    const profileSettingsForm = document.getElementById("profileSettingsForm");
+
+    profileSettingsForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const full_name = document.getElementById("settingsFullName").value.trim();
+        const email = document.getElementById("settingsEmail").value.trim();
+        const username = document.getElementById("settingsUsername").value.trim();
+
+        try {
+            const result = await apiRequest("/settings/profile", {
+                method: "PUT",
+                body: JSON.stringify({ full_name, email, username })
+            });
+
+            if (!result.success) {
+                throw new Error(result.message || "Unable to update profile.");
+            }
+
+            currentUser = {
+                ...currentUser,
+                ...result.user,
+                name: full_name
+            };
+
+            document.getElementById("userNameLabel").textContent = full_name;
+            document.getElementById("userAvatar").textContent =
+                full_name.charAt(0).toUpperCase();
+
+            showToast(result.message || "Profile updated successfully!");
+
+        } catch (error) {
+            showToast(error.message || "Unable to update profile.");
+        }
+    });
+
+
+    // SAVE BUSINESS INFORMATION
+    const businessSettingsForm = document.getElementById("businessSettingsForm");
+
+    businessSettingsForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const shop_name = document.getElementById("settingsBusinessName").value.trim();
+        const business_email = document.getElementById("settingsBusinessEmail").value.trim();
+        const contact_number = document.getElementById("settingsContact").value.trim();
+        const business_address = document.getElementById("settingsAddress").value.trim();
+
+        try {
+            const result = await apiRequest("/settings/business", {
+                method: "PUT",
+                body: JSON.stringify({
+                    shop_name,
+                    business_email,
+                    contact_number,
+                    business_address
+                })
+            });
+
+            if (!result.success) {
+                throw new Error(result.message || "Unable to update business information.");
+            }
+
+            currentUser = {
+                ...currentUser,
+                shop_name,
+                business_name: shop_name,
+                business_email,
+                contact_number,
+                business_address
+            };
+
+            showToast(result.message || "Business information updated successfully!");
+
+        } catch (error) {
+            showToast(error.message || "Unable to update business information.");
+        }
+    });
+
 
     changePasswordForm.addEventListener("submit", async (event) => {
         event.preventDefault();
 
-        const currentPassword = document.getElementById("currentPassword").value;
-        const newPassword = document.getElementById("newPassword").value;
-        const confirmPassword = document.getElementById("confirmNewPassword").value;
+        const currentPassword =
+            document.getElementById("currentPassword").value;
+
+        const newPassword =
+            document.getElementById("newPassword").value;
+
+        const confirmPassword =
+            document.getElementById("confirmNewPassword").value;
+
+        if (newPassword !== confirmPassword) {
+            showToast("New passwords do not match.");
+            return;
+        }
+
+        if (newPassword.length < 8) {
+            showToast("Password must have at least 8 characters.");
+            return;
+        }
 
         try {
             const result = await apiRequest("/password/request", {
@@ -2624,15 +2831,13 @@ function renderSettings() {
                 })
             });
 
-            showToast(result.message);
-
+            showToast(result.message || "Password changed successfully!");
             changePasswordForm.reset();
 
         } catch (error) {
             showToast(error.message);
         }
     });
-    
 }
 
 
