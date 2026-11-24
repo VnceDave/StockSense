@@ -3321,3 +3321,102 @@ header,
         grid-column: auto;
     }
 }
+.password-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.password-wrapper input {
+    width: 100%;
+    padding-right: 45px;
+    box-sizing: border-box;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: #64748b;
+    font-size: 16px;
+    padding: 5px;
+}
+
+.toggle-password:hover {
+    color: #64748b;
+    background: transparent;
+}
+
+.password-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.password-wrapper input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding-right: 45px;
+}
+
+
+/* ===== PASSWORD EYE ICON FIX ===== */
+
+.password-wrapper {
+    position: relative !important;
+    display: block !important;
+    width: 100%;
+}
+
+.password-wrapper input {
+    width: 100%;
+    box-sizing: border-box;
+    padding-right: 45px !important;
+}
+
+.password-wrapper .toggle-password {
+    position: absolute !important;
+    top: 50% !important;
+    right: 10px !important;
+    transform: translateY(-50%) !important;
+
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    padding: 0 !important;
+    margin: 0 !important;
+
+    background: transparent !important;
+    color: #64748b !important;
+    border: none !important;
+    border-radius: 50% !important;
+    box-shadow: none !important;
+
+    cursor: pointer;
+}
+
+/* Remove hover effects */
+.password-wrapper .toggle-password:hover,
+.password-wrapper .toggle-password:focus {
+    background: transparent !important;
+    color: #64748b !important;
+    border: none !important;
+    box-shadow: none !important;
+    transform: translateY(-50%) !important;
+}
+
+/* Eye icon color */
+.password-wrapper .toggle-password svg {
+    width: 19px;
+    height: 19px;
+    stroke: currentColor;
+}
