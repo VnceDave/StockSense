@@ -3251,3 +3251,73 @@ header,
         grid-template-columns: 1fr;
     }
 }
+
+/* SETTINGS PAGE */
+
+.settings-page {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.settings-heading {
+    margin-bottom: 5px;
+}
+
+.settings-heading h2 {
+    font-size: 22px;
+    margin-bottom: 5px;
+}
+
+.settings-heading p {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.settings-page .settings-section {
+    background: #fff;
+    border: 1px solid var(--line);
+    padding: 24px;
+}
+
+.settings-page .settings-section h3 {
+    color: var(--ink);
+}
+
+.settings-page .settings-section > p {
+    color: var(--muted);
+    margin-bottom: 18px;
+}
+
+.settings-page .field label {
+    color: var(--ink);
+}
+
+.settings-page .field input {
+    background: #fff;
+    color: var(--ink);
+    border: 1px solid #dce7df;
+}
+
+.settings-page .btn {
+    margin-top: 18px;
+}
+
+.settings-page .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.settings-page #changePasswordForm button {
+    display: inline-block !important;
+}
+
+@media (max-width: 700px) {
+    .settings-page .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .settings-page .field.full-field {
+        grid-column: auto;
+    }
+}
