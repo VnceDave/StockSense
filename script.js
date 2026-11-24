@@ -153,7 +153,7 @@ setHidden(publicWebsite, true);
     const avatar = document.getElementById("userAvatar");
 
     if (nameLabel) nameLabel.textContent = displayName;
-    if (roleLabel) roleLabel.textContent = currentUser?.role || "User";
+    if (roleLabel) roleLabel.textContent = "Admin";
     if (avatar) avatar.textContent = displayName.charAt(0).toUpperCase();
 
     showPage("dashboard");
@@ -2677,35 +2677,58 @@ function renderSettings() {
                 <form id="changePasswordForm">
                     <div class="form-grid">
                         <div class="field">
-                            <label for="currentPassword">Current Password</label>
-                            <input
-                                type="password"
-                                id="currentPassword"
-                                placeholder="Enter current password"
-                                required
-                            >
-                        </div>
+    <label for="currentPassword">Current Password</label>
+
+    <div class="password-wrapper">
+        <input
+            type="password"
+            id="currentPassword"
+            placeholder="Enter current password"
+            required
+        >
+
+        <button type="button" class="toggle-password"
+            onclick="togglePassword('currentPassword', this)">
+            <i class="fa-solid fa-eye"></i>
+        </button>
+    </div>
+</div>
 
                         <div class="field">
-                            <label for="newPassword">New Password</label>
-                            <input
-                                type="password"
-                                id="newPassword"
-                                placeholder="Enter new password"
-                                required
-                            >
-                        </div>
+    <label for="newPassword">New Password</label>
+
+    <div class="password-wrapper">
+        <input
+            type="password"
+            id="newPassword"
+            placeholder="Enter new password"
+            required
+        >
+
+        <button type="button" class="toggle-password"
+            onclick="togglePassword('newPassword', this)">
+            <i class="fa-solid fa-eye"></i>
+        </button>
+    </div>
+</div>
 
                         <div class="field">
-                            <label for="confirmNewPassword">Confirm New Password</label>
-                            <input
-                                type="password"
-                                id="confirmNewPassword"
-                                placeholder="Confirm new password"
-                                required
-                            >
-                        </div>
-                    </div>
+    <label for="confirmNewPassword">Confirm New Password</label>
+
+    <div class="password-wrapper">
+        <input
+            type="password"
+            id="confirmNewPassword"
+            placeholder="Confirm new password"
+            required
+        >
+
+        <button type="button" class="toggle-password"
+            onclick="togglePassword('confirmNewPassword', this)">
+            <i class="fa-solid fa-eye"></i>
+        </button>
+    </div>
+</div>
 
                     <button type="submit" class="btn btn-primary">
                         Change Password
@@ -2986,4 +3009,16 @@ if (registerForm) {
 
         registerMessage.textContent = "";
     }, true);
+}
+function togglePassword(inputId, button) {
+    const input = document.getElementById(inputId);
+    const icon = button.querySelector("i");
+
+    if (input.type === "password") {
+        input.type = "text";
+        icon.classList.replace("fa-eye", "fa-eye-slash");
+    } else {
+        input.type = "password";
+        icon.classList.replace("fa-eye-slash", "fa-eye");
+    }
 }
