@@ -334,6 +334,116 @@ app.use("/api", authenticateToken);
 
 
 // =====================================
+// UPDATE ACCOUNT PROFILE
+// =====================================
+
+app.put("/api/settings/profile", async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const { full_name, email, username } = req.body;
+
+        const fullName = String(full_name || "").trim();
+        const userEmail = String(email || "").trim().toLowerCase();
+        const userUsername = String(username || "").trim();
+
+        if (!fullName || !userEmail || !userUsername) {
+            return res.status(400).json({
+                success: false,
+                message: "Please complete all account fields."
+            });
+        }
+
+        const [existing] = await db.execute(
+            `SELECT user_id FROM users
+             WHERE (email = ? OR username = ?)
+             AND user_id != ?
+             LIMIT 1`,
+            [userEmail, userUsername, userId]
+        );
+
+        if (existing.length > 0) {
+            return res.status(409).json({
+                success: false,
+                message: "Email or username is already being used."
+            });
+        }
+
+        await db.execute(
+            `UPDATE users
+             SET full_name = ?, email = ?, username = ?
+             WHERE user_id = ?`,
+            [fullName, userEmail, userUsername, userId]
+        );
+
+        return res.json({
+            success: true,
+            message: "Account profile updated successfully!",
+            user: {
+                user_id: userId,
+                full_name: fullName,
+                email: userEmail,
+                username: userUsername
+            }
+        });
+
+    } catch (error) {
+        console.error("Update profile error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Unable to update account profile."
+        });
+    }
+});
+
+
+// =====================================
+// UPDATE BUSINESS INFORMATION
+// =====================================
+
+app.put("/api/settings/business", async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+
+        const {
+            shop_name,
+            business_address,
+            contact_number,
+            business_email
+        } = req.body;
+
+        await db.execute(
+            `UPDATE users
+             SET shop_name = ?,
+                 business_address = ?,
+                 contact_number = ?,
+                 business_email = ?
+             WHERE user_id = ?`,
+            [
+                shop_name?.trim() || null,
+                business_address?.trim() || null,
+                contact_number?.trim() || null,
+                business_email?.trim().toLowerCase() || null,
+                userId
+            ]
+        );
+
+        return res.json({
+            success: true,
+            message: "Business information updated successfully!"
+        });
+
+    } catch (error) {
+        console.error("Update business information error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Unable to update business information."
+        });
+    }
+});
+
+// =====================================
 // CHANGE PASSWORD
 // =====================================
 
@@ -425,6 +535,8 @@ app.post("/api/password/request", async (req, res) => {
 // INVENTORY
 // =====================================
 
+
+
 app.get("/api/inventory", async (req, res) => {
     try {
         const [inventory] = await db.execute(
@@ -463,6 +575,204 @@ app.get("/api/inventory", async (req, res) => {
         });
     }
 });
+
+
+// =====================================
+// SETTINGS
+// =====================================
+
+// GET ACCOUNT AND BUSINESS INFORMATION
+
+app.get("/api/settings", async (req, res) => {
+    try {
+        const [users] = await db.execute(
+            `SELECT
+                user_id,
+                full_name,
+                email,
+                username,
+                shop_name,
+                business_address,
+                contact_number,
+                business_email
+             FROM users
+             WHERE user_id = ?
+             LIMIT 1`,
+            [req.user.user_id]
+        );
+
+        if (!users.length) {
+            return res.status(404).json({
+                success: false,
+                message: "User account not found."
+            });
+        }
+
+        res.json({
+            success: true,
+            user: users[0]
+        });
+
+    } catch (error) {
+        console.error("Get settings error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to retrieve settings."
+        });
+    }
+});
+
+
+// UPDATE ACCOUNT INFORMATION
+
+app.put("/api/settings/profile", async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+
+        const fullName = String(req.body.full_name || "").trim();
+        const email = String(req.body.email || "").trim().toLowerCase();
+        const username = String(req.body.username || "").trim();
+
+        if (!fullName || !email || !username) {
+            return res.status(400).json({
+                success: false,
+                message: "Full name, email, and username are required."
+            });
+        }
+
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailPattern.test(email)) {
+            return res.status(400).json({
+                success: false,
+                message: "Please enter a valid email address."
+            });
+        }
+
+        const [existing] = await db.execute(
+            `SELECT user_id
+             FROM users
+             WHERE (email = ? OR username = ?)
+               AND user_id <> ?
+             LIMIT 1`,
+            [email, username, userId]
+        );
+
+        if (existing.length) {
+            return res.status(409).json({
+                success: false,
+                message: "Email or username is already being used."
+            });
+        }
+
+        await db.execute(
+            `UPDATE users
+             SET full_name = ?,
+                 email = ?,
+                 username = ?
+             WHERE user_id = ?`,
+            [fullName, email, username, userId]
+        );
+
+        const [updatedUsers] = await db.execute(
+            `SELECT
+                user_id,
+                full_name,
+                email,
+                username,
+                shop_name
+             FROM users
+             WHERE user_id = ?
+             LIMIT 1`,
+            [userId]
+        );
+
+        res.json({
+            success: true,
+            message: "Account information updated successfully.",
+            user: updatedUsers[0]
+        });
+
+    } catch (error) {
+        console.error("Update profile error:", error);
+
+        res.status(error.code === "ER_DUP_ENTRY" ? 409 : 500).json({
+            success: false,
+            message: error.code === "ER_DUP_ENTRY"
+                ? "Email or username is already being used."
+                : "Failed to update account information."
+        });
+    }
+});
+
+
+// UPDATE BUSINESS INFORMATION
+
+app.put("/api/settings/business", async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+
+        const shopName = String(req.body.shop_name || "").trim();
+        const businessAddress = String(
+            req.body.business_address || ""
+        ).trim();
+        const contactNumber = String(
+            req.body.contact_number || ""
+        ).trim();
+        const businessEmail = String(
+            req.body.business_email || ""
+        ).trim().toLowerCase();
+
+        if (!shopName) {
+            return res.status(400).json({
+                success: false,
+                message: "Business name is required."
+            });
+        }
+
+        if (businessEmail) {
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            if (!emailPattern.test(businessEmail)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Please enter a valid business email."
+                });
+            }
+        }
+
+        await db.execute(
+            `UPDATE users
+             SET shop_name = ?,
+                 business_address = ?,
+                 contact_number = ?,
+                 business_email = ?
+             WHERE user_id = ?`,
+            [
+                shopName,
+                businessAddress || null,
+                contactNumber || null,
+                businessEmail || null,
+                userId
+            ]
+        );
+
+        res.json({
+            success: true,
+            message: "Business information updated successfully."
+        });
+
+    } catch (error) {
+        console.error("Update business error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to update business information."
+        });
+    }
+});
+
 
 // =====================================
 // PRODUCTS
